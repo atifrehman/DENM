@@ -31,11 +31,12 @@
 #include "common/global.hpp"
 #include "common/logger.hpp"
 #include "table/cleanup.hpp"
-
 #include <ndn-cxx/lp/tags.hpp>
-
 #include "face/null-face.hpp"
-
+#include <ns3/node-list.h>
+#include <ns3/node.h>
+#include "ns3/mobility-model.h"
+#include "ns3/core-module.h"
 namespace nfd {
 
 NFD_LOG_INIT(Forwarder);
@@ -92,6 +93,7 @@ Forwarder::~Forwarder() = default;
 void
 Forwarder::onIncomingInterest(const FaceEndpoint& ingress, const Interest& interest)
 {
+  getCurrentNodeLocation();
   // receive Interest
   NFD_LOG_DEBUG("onIncomingInterest in=" << ingress << " interest=" << interest.getName());
   interest.setTag(make_shared<lp::IncomingFaceIdTag>(ingress.face.getId()));
@@ -606,6 +608,42 @@ Forwarder::insertDeadNonceList(pit::Entry& pitEntry, Face* upstream)
       m_deadNonceList.add(pitEntry.getName(), outRecord->getLastNonce());
     }
   }
+}
+
+ns3::Ptr<ns3::Node> 
+Forwarder::getCurrentNode()
+{
+  ns3::Ptr<ns3::Node> currentNode;
+  if (ns3::Simulator::GetContext() < 100) 
+  {
+        currentNode = ns3::NodeList::GetNode(ns3::Simulator::GetContext());
+  }
+  return currentNode;
+}
+
+std::tuple<double,double,double>
+Forwarder::getCurrentNodeLocation()
+{
+    std::tuple<double,double,double> currentLocation;
+    if (ns3::Simulator::GetContext() < 100) {
+
+        ns3::Ptr<ns3::Node> node = ns3::NodeList::GetNode(ns3::Simulator::GetContext());
+        uint32_t nodeId = node->GetId();
+        std::cout<<"ndn.Forwarder getCurrentNodeLocation(): node-id:  "<<nodeId<<std::endl;
+        ns3::Ptr<ns3::MobilityModel> mobility = node->GetObject<ns3::MobilityModel>();
+        if (mobility!=nullptr)
+        {
+          std::cout<<"ndn.Forwarder getCurrentNodeLocation(): x-postion:  "<<mobility->GetPosition().x<<std::endl;
+          std::cout<<"ndn.Forwarder getCurrentNodeLocation(): y-postion:  "<<mobility->GetPosition().y<<std::endl;
+          std::cout<<"ndn.Forwarder getCurrentNodeLocation(): z-postion:  "<<mobility->GetPosition().z<<std::endl;
+          currentLocation = {mobility->GetPosition().x,mobility->GetPosition().y,mobility->GetPosition().z};
+        }
+        else
+        {
+          std::cout<<"ndn.Forwarder getCurrentNodeLocation(): mobility return nullptr."<<std::endl;
+        }
+   }
+   return currentLocation;
 }
 
 } // namespace nfd

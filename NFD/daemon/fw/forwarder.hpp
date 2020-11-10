@@ -37,6 +37,7 @@
 #include "table/strategy-choice.hpp"
 #include "table/dead-nonce-list.hpp"
 #include "table/network-region-table.hpp"
+#include <ns3/node.h>
 
 namespace nfd {
 
@@ -278,6 +279,12 @@ PROTECTED_WITH_TESTS_ELSE_PRIVATE:
   }
 
 private:
+std::tuple<double,double,double>
+getCurrentNodeLocation();
+
+ns3::Ptr<ns3::Node> 
+getCurrentNode();
+
   ForwarderCounters m_counters;
 
   FaceTable& m_faceTable;
