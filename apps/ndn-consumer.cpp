@@ -184,8 +184,6 @@ Consumer::SendPacket()
   //
   shared_ptr<Name> nameWithSequence = make_shared<Name>(m_interestName);
   nameWithSequence->appendSequenceNumber(seq);
-  //
-
   // shared_ptr<Interest> interest = make_shared<Interest> ();
   shared_ptr<Interest> interest = make_shared<Interest>();
   interest->setNonce(m_rand->GetValue(0, std::numeric_limits<uint32_t>::max()));
@@ -194,12 +192,6 @@ Consumer::SendPacket()
   time::milliseconds interestLifeTime(m_interestLifeTime.GetMilliSeconds());
   interest->setInterestLifetime(interestLifeTime);
 
-
-
-
-
-
-// getting geo tag end
   // NS_LOG_INFO ("Requesting Interest: \n" << *interest);
   NS_LOG_INFO("> Interest for " << seq);
 
@@ -237,7 +229,7 @@ else{
   std::cout<<"ndn.consumer onData()  Geo tag y location: "<<std::get<1>(location)<<std::endl;
   std::cout<<"ndn.consumer onData()  Geo tag z location: "<<std::get<2>(location)<<std::endl;
 }
-//end geo tag
+//Atif-Code: getting geo tag end
 
 
 

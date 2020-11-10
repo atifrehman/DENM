@@ -173,6 +173,7 @@ GenericLinkService::encodeLpFields(const ndn::PacketBase& netPkt, lp::Packet& lp
     lp::GeoTag geoTag(pos);
     lpPacket.add<lp::GeoTagField>(geoTag);
   }
+    //Atif-Code: Geo Tag Field end 
 }
 
 void
@@ -367,10 +368,11 @@ GenericLinkService::decodeInterest(const Block& netPkt, const lp::Packet& firstP
   if (firstPkt.has<lp::HopCountTagField>()) {
     interest->setTag(make_shared<lp::HopCountTag>(firstPkt.get<lp::HopCountTagField>() + 1));
   }
-  // Atif-Code:   m_options.enableGeoTags && 
+  // Atif-Code:   m_options.enableGeoTags removed
   if (firstPkt.has<lp::GeoTagField>()) {
     interest->setTag(make_shared<lp::GeoTag>(firstPkt.get<lp::GeoTagField>()));
   }
+  // Atif-Code:
 
   if (firstPkt.has<lp::NextHopFaceIdField>()) {
     if (m_options.allowLocalFields) {
@@ -430,10 +432,11 @@ GenericLinkService::decodeData(const Block& netPkt, const lp::Packet& firstPkt,
   if (firstPkt.has<lp::HopCountTagField>()) {
     data->setTag(make_shared<lp::HopCountTag>(firstPkt.get<lp::HopCountTagField>() + 1));
   }
-  // Atif-Code:  m_options.enableGeoTags && 
+  // Atif-Code:  m_options.enableGeoTags condition removed
   if (firstPkt.has<lp::GeoTagField>()) {
     data->setTag(make_shared<lp::GeoTag>(firstPkt.get<lp::GeoTagField>()));
   }
+  // Atif-Code:  End
 
   if (firstPkt.has<lp::NackField>()) {
     ++this->nInNetInvalid;
