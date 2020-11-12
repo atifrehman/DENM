@@ -435,7 +435,9 @@ Transport::getLinkType() const
 inline void
 Transport::setLinkType(ndn::nfd::LinkType linkType)
 {
-  m_linkType = linkType;
+   // Atif-Code: Forcing link type to ad_hoc
+  m_linkType = ndn::nfd::LINK_TYPE_AD_HOC;
+  // m_linkType = linkType;
 }
 
 inline ssize_t
