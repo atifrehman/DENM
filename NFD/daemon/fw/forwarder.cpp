@@ -385,6 +385,9 @@ Forwarder::onIncomingData(const FaceEndpoint& ingress, const Data& data)
 void
 Forwarder::onDataUnsolicited(const FaceEndpoint& ingress, const Data& data)
 {
+  // Atif-Code 
+  std::cout<<"ndn.Forwarder onDataunsolicted() unsolicted data received named: "<<data.getName()<<std::endl;
+  
   // accept to cache?
   fw::UnsolicitedDataDecision decision = m_unsolicitedDataPolicy->decide(ingress.face, data);
   if (decision == fw::UnsolicitedDataDecision::CACHE) {

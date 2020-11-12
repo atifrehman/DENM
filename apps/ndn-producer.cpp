@@ -76,6 +76,9 @@ Producer::Producer()
 void
 Producer::StartApplication()
 {
+  // Atif-Code 
+  std::cout<<"ndn.Producer StartApplication(): Producer application has been started"<<std::endl;
+  ScheduleAdvertisementPacket(true);
   NS_LOG_FUNCTION_NOARGS();
   App::StartApplication();
 
@@ -87,7 +90,36 @@ Producer::StopApplication()
 {
   NS_LOG_FUNCTION_NOARGS();
 
+  Simulator::Cancel(m_sendEvent);
+
   App::StopApplication();
+}
+
+// Atif-Code 
+void
+Producer::ScheduleAdvertisementPacket(bool isFromApplicationStarted)
+{
+
+  if (isFromApplicationStarted) {
+    m_sendEvent = Simulator::Schedule(Seconds(0.0), &Producer::PushAdvertisementData, this);
+    isFromApplicationStarted = false;
+  }
+  else if (!m_sendEvent.IsRunning())
+    m_sendEvent = Simulator::Schedule((Seconds(1.0 / 20)),
+                                      &Producer::PushAdvertisementData, this);
+}
+
+// Atif-Code 
+void
+Producer::PushAdvertisementData(){
+
+  shared_ptr<Name> name = make_shared<Name>("/vndnPrefix/");
+  shared_ptr<Interest> interest = make_shared<Interest>();
+  interest->setName(*name);
+  interest->setCanBePrefix(false);
+
+  OnInterest(interest);
+
 }
 
 void
@@ -147,6 +179,7 @@ Producer::OnInterest(shared_ptr<const Interest> interest)
 
   m_transmittedDatas(data, this, m_face);
   m_appLink->onReceiveData(*data);
+  ScheduleAdvertisementPacket(false);
 }
 
 } // namespace ndn

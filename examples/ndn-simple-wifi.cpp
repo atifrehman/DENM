@@ -116,10 +116,13 @@ main(int argc, char* argv[])
   // 4. Set up applications
   NS_LOG_INFO("Installing Applications");
 
-  ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
-  consumerHelper.SetPrefix("/test/prefix");
-  consumerHelper.SetAttribute("Frequency", DoubleValue(10.0));
-  consumerHelper.Install(nodes.Get(0));
+
+// Atif-Code: No need to setup consumer application since we are dealing with the push based communication in which the producer node initiates the communication
+
+  // ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
+  // consumerHelper.SetPrefix("/test/prefix");
+  // consumerHelper.SetAttribute("Frequency", DoubleValue(10.0));
+  // consumerHelper.Install(nodes.Get(0));
 
   ndn::AppHelper producerHelper("ns3::ndn::Producer");
   producerHelper.SetPrefix("/");

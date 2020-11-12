@@ -58,9 +58,16 @@ protected:
 
   virtual void
   StopApplication(); // Called at time specified by Stop
-
+// Atif-Code 
+  void
+  ScheduleAdvertisementPacket(bool isFromApplicationStarted);// scdheuling push packets
+  void 
+  PushAdvertisementData(); // genering name for pushAdvertisment packet
+  void 
+  Push(shared_ptr<const Interest> interest);
 private:
   Name m_prefix;
+  EventId m_sendEvent; 
   Name m_postfix;
   uint32_t m_virtualPayloadSize;
   Time m_freshness;
