@@ -283,7 +283,7 @@ struct STValue
 {
   int contentType;
   int appType;
-  int spatialRange;
+  int spatialRange; 
   int temporalRange;
 };
 
