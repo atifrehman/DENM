@@ -650,7 +650,7 @@ Forwarder::GetCurrentNodeLocation()
           std::cout<<"ndn.Forwarder getCurrentNodeLocation(): z-postion:  "<<mobility->GetPosition().z<<std::endl;
           currentLocation = {mobility->GetPosition().x,mobility->GetPosition().y,mobility->GetPosition().z};
         }
-        else 
+        else  
         {
           std::cout<<"ndn.Forwarder getCurrentNodeLocation(): mobility return nullptr."<<std::endl;
         }
