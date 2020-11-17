@@ -278,12 +278,26 @@ PROTECTED_WITH_TESTS_ELSE_PRIVATE:
     trigger(m_strategyChoice.findEffectiveStrategy(pitEntry));
   }
 
+// Atif-Code: Spatial Temporal Values
+struct STValue
+{
+  int contentType;
+  int appType;
+  int spatialRange;
+  int temporalRange;
+};
+
+std::vector<STValue>
+getSTValues();
+
+// Atif-Code: Spatial Temporal Values End
+
 private:
 std::tuple<double,double,double>
-getCurrentNodeLocation();
+GetCurrentNodeLocation();
 
 ns3::Ptr<ns3::Node> 
-getCurrentNode();
+GetCurrentNode();
 
   ForwarderCounters m_counters;
 

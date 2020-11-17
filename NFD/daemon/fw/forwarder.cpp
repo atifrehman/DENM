@@ -93,7 +93,7 @@ Forwarder::~Forwarder() = default;
 void
 Forwarder::onIncomingInterest(const FaceEndpoint& ingress, const Interest& interest)
 {
-  getCurrentNodeLocation();
+  //GetCurrentNodeLocation();
   // receive Interest
   NFD_LOG_DEBUG("onIncomingInterest in=" << ingress << " interest=" << interest.getName());
   interest.setTag(make_shared<lp::IncomingFaceIdTag>(ingress.face.getId()));
@@ -124,6 +124,9 @@ Forwarder::onIncomingInterest(const FaceEndpoint& ingress, const Interest& inter
                   << " interest=" << interest.getName() << " reaching-producer-region");
     const_cast<Interest&>(interest).setForwardingHint({});
   }
+
+  //Atif:Code 
+  getSTValues();
 
   // PIT insert
   shared_ptr<pit::Entry> pitEntry = m_pit.insert(interest).first;
@@ -303,6 +306,9 @@ Forwarder::onIncomingData(const FaceEndpoint& ingress, const Data& data)
   if (pitMatches.size() == 0) {
     // goto Data unsolicited pipeline
     this->onDataUnsolicited(ingress, data);
+
+    // Atif-Code Forwarding unsolicited Data on the ingress face (adhoc)
+     this->onOutgoingData(data, ingress);
     return;
   }
 
@@ -386,7 +392,7 @@ void
 Forwarder::onDataUnsolicited(const FaceEndpoint& ingress, const Data& data)
 {
   // Atif-Code 
-  std::cout<<"ndn.Forwarder onDataunsolicted() unsolicted data received named: "<<data.getName()<<std::endl;
+  std::cout<<"ndn.Forwarder onDataunsolicted() unsolicted data received named: "<<data.getName()<<" node-id: "<<GetCurrentNode()->GetId()<<std::endl;
   
   // accept to cache?
   fw::UnsolicitedDataDecision decision = m_unsolicitedDataPolicy->decide(ingress.face, data);
@@ -401,6 +407,7 @@ Forwarder::onDataUnsolicited(const FaceEndpoint& ingress, const Data& data)
 void
 Forwarder::onOutgoingData(const Data& data, const FaceEndpoint& egress)
 {
+std::cout<<"ndn.Forwarder onOutgoingData()  I am validating for the forwarding of the Data: Link Type:"<<egress.face.getLinkType()<<std::endl;
   if (egress.face.getId() == face::INVALID_FACEID) {
     NFD_LOG_WARN("onOutgoingData out=(invalid) data=" << data.getName());
     return;
@@ -416,6 +423,8 @@ Forwarder::onOutgoingData(const Data& data, const FaceEndpoint& egress)
     return;
   }
 
+// Atif-Code
+std::cout<<"ndn.Forwarder onOutgoingData()  I am forwarding the Data"<<std::endl;
   // TODO traffic manager
 
   // send Data
@@ -614,7 +623,7 @@ Forwarder::insertDeadNonceList(pit::Entry& pitEntry, Face* upstream)
 }
 
 ns3::Ptr<ns3::Node> 
-Forwarder::getCurrentNode()
+Forwarder::GetCurrentNode()
 {
   ns3::Ptr<ns3::Node> currentNode;
   if (ns3::Simulator::GetContext() < 100) 
@@ -625,7 +634,7 @@ Forwarder::getCurrentNode()
 }
 
 std::tuple<double,double,double>
-Forwarder::getCurrentNodeLocation()
+Forwarder::GetCurrentNodeLocation()
 {
     std::tuple<double,double,double> currentLocation;
     if (ns3::Simulator::GetContext() < 100) {
@@ -647,6 +656,29 @@ Forwarder::getCurrentNodeLocation()
         }
    }
    return currentLocation;
+}
+std::vector<Forwarder::STValue>
+Forwarder::getSTValues()
+{
+  //static table to the nodes for scope comparsion 
+  std::vector<Forwarder::STValue> st_valueCollection; 
+  st_valueCollection.push_back({1,0011, 100, 10});
+  st_valueCollection.push_back({0,0011, 100, 5});
+  st_valueCollection.push_back({1,1101, 100, 10});
+
+ 
+  for (std::vector<Forwarder::STValue>::iterator it=st_valueCollection.begin(); it!=st_valueCollection.end();++it)
+  {
+    std::cout<<"ndn.Forwarder getSTValues(): printing static table values."<<std::endl;
+    std::cout<<"ndn.Forwarder getSTValues(): printing static table values: appType:"<<it->appType<<std::endl;
+    std::cout<<"ndn.Forwarder getSTValues(): printing static table values: contentType."<<it->contentType<<std::endl;
+    std::cout<<"ndn.Forwarder getSTValues(): printing static table values: spatialRange."<<it->spatialRange<<std::endl;
+    std::cout<<"ndn.Forwarder getSTValues(): printing static table values: temporalRange."<<it->temporalRange<<std::endl;
+  }
+  
+  
+  
+  return st_valueCollection;
 }
 
 } // namespace nfd
