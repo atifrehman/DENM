@@ -654,7 +654,7 @@ Forwarder::GetCurrentNodeLocation()
         {
           std::cout<<"ndn.Forwarder getCurrentNodeLocation(): mobility return nullptr."<<std::endl;
         }
-   }
+   } 
    return currentLocation;
 }
 std::vector<Forwarder::STValue>
