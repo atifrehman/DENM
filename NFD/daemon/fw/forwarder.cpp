@@ -635,7 +635,8 @@ Forwarder::GetCurrentNode()
 
 std::tuple<double,double,double>
 Forwarder::GetCurrentNodeLocation()
-{
+{  
+    // tupple
     std::tuple<double,double,double> currentLocation;
     if (ns3::Simulator::GetContext() < 100) {
 
