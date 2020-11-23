@@ -114,7 +114,7 @@ main(int argc, char* argv[])
   ndn::StrategyChoiceHelper::Install(nodes, "/", "/localhost/nfd/strategy/best-route");
 
   // 4. Set up applications
-  NS_LOG_INFO("Installing Applications");
+  NS_LOG_INFO("Installing Applications"); 
 
 
 // Atif-Code: No need to setup consumer application since we are dealing with the push based communication in which the producer node initiates the communication
