@@ -117,6 +117,7 @@ main(int argc, char* argv[])
   NS_LOG_INFO("Installing Applications"); 
 
 
+//
 // Atif-Code: No need to setup consumer application since we are dealing with the push based communication in which the producer node initiates the communication
 
   // ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
