@@ -288,6 +288,7 @@ void
 Forwarder::onIncomingData(const FaceEndpoint& ingress, const Data& data)
 {
   // receive Data
+  std::cout<<"ndn.Forwarder onIncomingData()  I have received the data on face type: "<<ingress.face.getLinkType()<<"on node node id: "<<GetCurrentNode()->GetId()<<std::endl;
   NFD_LOG_DEBUG("onIncomingData in=" << ingress << " data=" << data.getName());
   data.setTag(make_shared<lp::IncomingFaceIdTag>(ingress.face.getId()));
   ++m_counters.nInData;
@@ -626,7 +627,7 @@ ns3::Ptr<ns3::Node>
 Forwarder::GetCurrentNode()
 {
   ns3::Ptr<ns3::Node> currentNode;
-  if (ns3::Simulator::GetContext() < 100) 
+  if (ns3::Simulator::GetContext() < 100000) 
   {
         currentNode = ns3::NodeList::GetNode(ns3::Simulator::GetContext());
   }
@@ -635,10 +636,9 @@ Forwarder::GetCurrentNode()
 
 std::tuple<double,double,double>
 Forwarder::GetCurrentNodeLocation()
-{  
-    // tupple
+{
     std::tuple<double,double,double> currentLocation;
-    if (ns3::Simulator::GetContext() < 100) {
+    if (ns3::Simulator::GetContext() < 1000000) {
 
         ns3::Ptr<ns3::Node> node = ns3::NodeList::GetNode(ns3::Simulator::GetContext());
         uint32_t nodeId = node->GetId();
@@ -651,11 +651,11 @@ Forwarder::GetCurrentNodeLocation()
           std::cout<<"ndn.Forwarder getCurrentNodeLocation(): z-postion:  "<<mobility->GetPosition().z<<std::endl;
           currentLocation = {mobility->GetPosition().x,mobility->GetPosition().y,mobility->GetPosition().z};
         }
-        else  
+        else
         {
           std::cout<<"ndn.Forwarder getCurrentNodeLocation(): mobility return nullptr."<<std::endl;
         }
-   } 
+   }
    return currentLocation;
 }
 std::vector<Forwarder::STValue>

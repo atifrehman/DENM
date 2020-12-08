@@ -153,9 +153,9 @@ Producer::OnInterest(shared_ptr<const Interest> interest)
 
   std::shared_ptr<lp::GeoTag> tag = data->getTag<lp::GeoTag>();
   std::tuple<double, double, double> location=tag->getPos();
-  std::cout<<"ndn.producer onInterest()  Geo tag x location: "<<std::get<0>(location)<<std::endl;
-  std::cout<<"ndn.producer onInterest()  Geo tag y location: "<<std::get<1>(location)<<std::endl;
-  std::cout<<"ndn.producer onInterest()  Geo tag z location: "<<std::get<2>(location)<<std::endl;
+  // std::cout<<"ndn.producer onInterest()  Geo tag x location: "<<std::get<0>(location)<<std::endl;
+  // std::cout<<"ndn.producer onInterest()  Geo tag y location: "<<std::get<1>(location)<<std::endl;
+  // std::cout<<"ndn.producer onInterest()  Geo tag z location: "<<std::get<2>(location)<<std::endl;
   
 //Atif-Code: setting geo tag end 
 

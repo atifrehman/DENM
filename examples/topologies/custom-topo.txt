@@ -1,0 +1,130 @@
+# x-topo.txt
+
+router
+
+# region 1
+#node	city	y	  x
+ap1	    NA	    750	     800
+ap2	    NA	    -50	     400
+r1  	NA	    400   	 300
+r2  	NA	    100   	 300
+r3  	NA	    -200   	 300
+
+r4  	NA	    400  	 0
+root1	NA	    450      -100
+root2	NA	    400      -100
+root3	NA	    350      -100
+
+r5  	NA	    100  	 0
+root4	NA	    50      -100
+root5	NA	    100     -100
+root6	NA	    150     -100
+
+r6  	NA	    -200  	 0
+root7	NA	    -250     -100
+root8	NA	    -200     -100
+root9	NA	    -150     -100
+
+# region 2
+ap3	    NA	    -250	 1150
+ap4	    NA	    -250	 1450
+r7  	NA	    200   	 1000
+r8  	NA	    200   	 1300
+r9  	NA	    200   	 1600
+
+r10  	NA	    400  	 1000
+root10	NA	    500      950
+root11	NA	    500      1000
+root12	NA	    500      1050
+
+r11  	NA	    400      1300
+root13	NA	    500      1250
+root14	NA	    500      1300
+root15	NA	    500      1350
+
+r12  	NA	    400  	 1600
+root16	NA	    500     1550
+root17	NA	    500     1600
+root18	NA	    500     1650
+
+
+# region 3
+ap5	    NA	    -650	 950
+ap6	    NA	    -650	 1250
+r13  	NA	    -200   	 800
+r14  	NA	    -200   	 1100
+r15  	NA	    -200   	 1400
+
+r16  	NA	    -400  	 800
+root19	NA	    -500      750
+root20	NA	    -500      800
+root21	NA	    -500      850
+
+r17  	NA	    -400      1100
+root22	NA	    -500      1050
+root23	NA	    -500      1100
+root24	NA	    -500      1150
+
+r18  	NA	    -400  	 1400
+root25	NA	    -500     1350
+root26	NA	    -500     1400
+root27	NA	    -500     1450
+
+
+link
+
+# from	    to		capacity	metric	delay	  queue
+
+# region 1 link
+ap1	        r1  	10Mbps		1	      2ms	    100
+ap1	        r2  	10Mbps		1	      2ms	    100
+ap2	        r2  	10Mbps		1	      2ms	    100
+ap2	        r3  	10Mbps		1	      2ms	    100
+r1	        r4  	10Mbps		1	      2ms	    100
+r4          root1    10Mbps      1         100ms     100
+r4          root2    10Mbps      1         100ms     100
+r4          root3    10Mbps      1         100ms     100
+r2	        r5  	10Mbps		1	      2ms	    100
+r5          root4    10Mbps      1         100ms     100
+r5          root5    10Mbps      1         100ms     100
+r5          root6    10Mbps      1         100ms     100
+r3	        r6  	10Mbps		1	      2ms	    100
+r6          root7    10Mbps      1         100ms     100
+r6          root8    10Mbps      1         100ms     100
+r6          root9    10Mbps      1         100ms     100
+
+# region 2 link
+ap3	        r7  	10Mbps		1	      2ms	    100
+ap3	        r8  	10Mbps		1	      2ms	    100
+ap4	        r8  	10Mbps		1	      2ms	    100
+ap4	        r9  	10Mbps		1	      2ms	    100
+r7	        r10  	10Mbps		1	      2ms	    100
+r10         root10    10Mbps      1         100ms     100
+r10         root11    10Mbps      1         100ms     100
+r10         root12    10Mbps      1         100ms     100
+r8	        r11  	10Mbps		1	      2ms	    100
+r11          root13    10Mbps      1         100ms     100
+r11          root14    10Mbps      1         100ms     100
+r11          root15    10Mbps      1         100ms     100
+r9	        r12  	10Mbps		1	      2ms	    100
+r12         root16    10Mbps      1         100ms     100
+r12         root17    10Mbps      1         100ms     100
+r12         root18    10Mbps      1         100ms     100
+
+# region 3 link
+ap5	        r13  	10Mbps		1	      2ms	    100
+ap5	        r14  	10Mbps		1	      2ms	    100
+ap6	        r14  	10Mbps		1	      2ms	    100
+ap6	        r15  	10Mbps		1	      2ms	    100
+r13	        r16  	10Mbps		1	      2ms	    100
+r16         root19    10Mbps      1         100ms     100
+r16         root20    10Mbps      1         100ms     100
+r16         root21    10Mbps      1         100ms     100
+r14	        r17  	10Mbps		1	      2ms	    100
+r17          root22    10Mbps      1         100ms     100
+r17          root23    10Mbps      1         100ms     100
+r17          root24    10Mbps      1         100ms     100
+r15	        r18  	10Mbps		1	      2ms	    100
+r18         root25    10Mbps      1         100ms     100
+r18         root26    10Mbps      1         100ms     100
+r18         root27    10Mbps      1         100ms     100
