@@ -1,31 +1,37 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Md Ashiqur Rahman: University of Arizona.
- * Muhammad Atif U Rehman: Hongik University
+ * Copyright (c) 2011-2015  Regents of the University of California.
  *
+ * This file is part of ndnSIM. See AUTHORS for complete list of ndnSIM authors and
+ * contributors.
+ *
+ * ndnSIM is free software: you can redistribute it and/or modify it under the terms
+ * of the GNU General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * ndnSIM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * ndnSIM, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  **/
+
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
-#include "ns3/mobility-module.h"
-#include "ns3/config-store-module.h"
+#include "ns3/applications-module.h"
 #include "ns3/wifi-module.h"
+#include "ns3/mobility-module.h"
 #include "ns3/internet-module.h"
+
 #include "ns3/ndnSIM-module.h"
-#include "ns3/point-to-point-module.h"
-#include "ns3/netanim-module.h"
-#include "ns3/constant-velocity-mobility-model.h"
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <string>
-NS_LOG_COMPONENT_DEFINE ("simple-wifi-mobility");
 
 using namespace std;
-
 namespace ns3 {
 
+NS_LOG_COMPONENT_DEFINE("ndn.WifiExample");
 
-    void RevertDirection(NodeContainer consumers, bool revert) //DEBUG purpose
+void RevertDirection(NodeContainer consumers, bool revert) //DEBUG purpose
     {
     if(revert==true)
     {
@@ -40,7 +46,7 @@ namespace ns3 {
     cvmm->SetVelocity(vel);
     // consumer 2
     Ptr<ConstantVelocityMobilityModel> cvmm1 = consumers.Get(1)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos1 (450, -300, 0);
+    Vector pos1 (425, -300, 0);
     Vector vel1 (0, 50, 0);   //y axis forward direction
     cvmm1->SetPosition(pos1);
     cvmm1->SetVelocity(vel1);
@@ -62,7 +68,7 @@ namespace ns3 {
     cvmm->SetVelocity(vel);
     // consumer 2
     Ptr<ConstantVelocityMobilityModel> cvmm1 = consumers.Get(1)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos1 (450, 100, 0);
+    Vector pos1 (425, 100, 0);
     Vector vel1 (0, -50, 0);   
     cvmm1->SetPosition(pos1);
     cvmm1->SetVelocity(vel1);
@@ -73,135 +79,113 @@ namespace ns3 {
 
 
     }
+int
+main(int argc, char* argv[])
+{
+  // disable fragmentation
+  Config::SetDefault("ns3::WifiRemoteStationManager::FragmentationThreshold", StringValue("2200"));
+  Config::SetDefault("ns3::WifiRemoteStationManager::RtsCtsThreshold", StringValue("2200"));
+  Config::SetDefault("ns3::WifiRemoteStationManager::NonUnicastMode",
+                     StringValue("OfdmRate24Mbps"));
 
-  int main (int argc, char *argv[])
-  {
-    std::string phyMode ("DsssRate1Mbps");
-    uint32_t wifiSta = 4;
+  CommandLine cmd;
+  cmd.Parse(argc, argv);
 
-    int accesspoint1 = 2;            // number of AP nodes
-    int spacing = 300;            // between bottom-row nodes
-    int range = 110;
-    double endtime = 20.0;
+  //////////////////////
+  //////////////////////
+  //////////////////////
+  WifiHelper wifi;
+  // wifi.SetRemoteStationManager ("ns3::AarfWifiManager");
+  wifi.SetStandard(WIFI_PHY_STANDARD_80211a);
+  wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode",
+                               StringValue("OfdmRate24Mbps"));
 
-    string animFile = "ap-mobility-animation.xml";
+  YansWifiChannelHelper wifiChannel; // = YansWifiChannelHelper::Default ();
+  wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
+  wifiChannel.AddPropagationLoss("ns3::ThreeLogDistancePropagationLossModel");
+  wifiChannel.AddPropagationLoss("ns3::NakagamiPropagationLossModel");
 
-    CommandLine cmd;
-    cmd.AddValue ("animFile", "File Name for Animation Output", animFile);
-    cmd.Parse (argc, argv);
+  // YansWifiPhy wifiPhy = YansWifiPhy::Default();
+  YansWifiPhyHelper wifiPhyHelper = YansWifiPhyHelper::Default();
+  wifiPhyHelper.SetChannel(wifiChannel.Create());
+  wifiPhyHelper.Set("TxPowerStart", DoubleValue(10));
+  wifiPhyHelper.Set("TxPowerEnd", DoubleValue(10));
 
-    ////// disable fragmentation, RTS/CTS for frames below 2200 bytes and fix non-unicast data rate
-    Config::SetDefault("ns3::WifiRemoteStationManager::FragmentationThreshold", StringValue("2200"));
-    Config::SetDefault ("ns3::WifiRemoteStationManager::RtsCtsThreshold", StringValue("2200"));
-    Config::SetDefault ("ns3::WifiRemoteStationManager::NonUnicastMode", StringValue(phyMode));
-
-    ////// The below set of helpers will help us to put together the wifi NICs we want 
-    WifiHelper wifi;
-
-    wifi.SetStandard (WIFI_PHY_STANDARD_80211b);
-    YansWifiPhyHelper wifiPhy = YansWifiPhyHelper::Default ();
-
-    ////// ns-3 supports RadioTap and Prism tracing extensions for 802.11b
-    wifiPhy.SetPcapDataLinkType (YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
-
-    YansWifiChannelHelper wifiChannel;
-
-    wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
-
-    ////// the following has an absolute cutoff at distance > range (range == radius)
-    wifiChannel.AddPropagationLoss ("ns3::RangePropagationLossModel", 
-                                    "MaxRange", DoubleValue(range));
-    wifiPhy.SetChannel (wifiChannel.Create ());
-    wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
-                                  "DataMode", StringValue (phyMode),
-                                  "ControlMode", StringValue (phyMode));
-
-    ////// Add a non-QoS upper mac of STAs, and disable rate control
-    WifiMacHelper wifiMacHelper;
-    ////// Active associsation of STA to AP via probing.
-    wifiMacHelper.SetType("ns3::AdhocWifiMac");
-
-    NodeContainer mobileNodes;
-    mobileNodes.Create(2);
-
-    NetDeviceContainer staDevice = wifi.Install (wifiPhy, wifiMacHelper, mobileNodes);
-    NetDeviceContainer devices = staDevice;
-
-    ////// Setup AP.
-    WifiMacHelper wifiMac;
-    wifiMacHelper.SetType("ns3::AdhocWifiMac");
-    NetDeviceContainer apDevice = wifi.Install (wifiPhy, wifiMac, mobileNodes[0]);
-    devices.Add (apDevice);
+  WifiMacHelper wifiMacHelper;
+  wifiMacHelper.SetType("ns3::AdhocWifiMac");
 
 
-    ////// Setting mobility model and movement parameters for mobile nodes
+
+  NodeContainer nodes;
+  nodes.Create(2);
+
+  ////////////////
+  // 1. Install Wifi
+  NetDeviceContainer wifiNetDevices = wifi.Install(wifiPhyHelper, wifiMacHelper, nodes);
+
+  // 2. Install Mobility model
+ ////// Setting mobility model and movement parameters for mobile nodes
     ////// ConstantVelocityMobilityModel is a subclass of MobilityModel
     MobilityHelper mobile; 
     mobile.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
-    mobile.Install(mobileNodes);
+    mobile.Install(nodes);
     ////// Setting position and velocity of mobile node 1
-    Ptr<ConstantVelocityMobilityModel> cvmm = mobileNodes.Get(0)->GetObject<ConstantVelocityMobilityModel> ();
+    Ptr<ConstantVelocityMobilityModel> cvmm = nodes.Get(0)->GetObject<ConstantVelocityMobilityModel> ();
     Vector pos (450, -300, 0);
-    Vector vel (0, 25, 0);
+    Vector vel (0, 50, 0);
     cvmm->SetPosition(pos);
     cvmm->SetVelocity(vel);
      ////// Setting position and velocity of mobile node 2
-    Ptr<ConstantVelocityMobilityModel> cvmm1 = mobileNodes.Get(1)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos1 (400, 100, 0);
-    Vector vel1 (0, -25, 0);
+    Ptr<ConstantVelocityMobilityModel> cvmm1 = nodes.Get(1)->GetObject<ConstantVelocityMobilityModel> ();
+    Vector pos1 (425, 100, 0);
+    Vector vel1 (0, -50, 0);
     cvmm1->SetPosition(pos1);
     cvmm1->SetVelocity(vel1);
 
-    
-    // std::cout << "position: " << cvmm->GetPosition() << " velocity: " << cvmm->GetVelocity() << std::endl;
-    // std::cout << "mover mobility model: " << mobile.GetMobilityModelType() << std::endl; // just for confirmation
+  // 3. Install NDN stack
+  NS_LOG_INFO("Installing NDN stack");
+  ndn::StackHelper ndnHelper;
+  // ndnHelper.AddNetDeviceFaceCreateCallback (WifiNetDevice::GetTypeId (), MakeCallback
+  // (MyNetDeviceFaceCallback));
+  ndnHelper.setPolicy("nfd::cs::lru");
+  ndnHelper.setCsSize(1000);
+  ndnHelper.SetDefaultRoutes(true);
+  ndnHelper.Install(nodes);
 
-    // 3. Install NDN stack on all nodes
-    NS_LOG_INFO("Installing NDN stack");
-    ndn::StackHelper ndnHelper;
-    ndnHelper.InstallAll();
+  // Set BestRoute strategy
+  ndn::StrategyChoiceHelper::Install(nodes, "/", "/localhost/nfd/strategy/best-route");
 
-    // Choosing forwarding strategy
-    ndn::StrategyChoiceHelper::InstallAll("/prefix", "/localhost/nfd/strategy/broadcast");
+  // 4. Set up applications
+  NS_LOG_INFO("Installing Applications"); 
 
 
-    // Installing global routing interface on all nodes
-    ndn::GlobalRoutingHelper ndnGlobalRoutingHelper;
-    ndnGlobalRoutingHelper.InstallAll();
-
+//
 // Atif-Code: No need to setup consumer application since we are dealing with the push based communication in which the producer node initiates the communication
 
-  ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
+   ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
   // consumerHelper.SetPrefix("/test/prefix");
   // consumerHelper.SetAttribute("Frequency", DoubleValue(10.0));
-  consumerHelper.Install(mobileNodes.Get(0));
+  consumerHelper.Install(nodes.Get(0));
 
   ndn::AppHelper producerHelper("ns3::ndn::Producer");
   producerHelper.SetPrefix("/");
   producerHelper.SetAttribute("PayloadSize", StringValue("1200"));
-  producerHelper.Install(mobileNodes.Get(1));
-    
-    
+  producerHelper.Install(nodes.Get(1));
 
-    // Calculate and install FIBs
-    ndn::GlobalRoutingHelper::CalculateRoutes();
+  ////////////////
+  Simulator::Schedule(Seconds(12), &RevertDirection, nodes,false);
+  Simulator::Stop(Seconds(30.0));
 
+  Simulator::Run();
+  Simulator::Destroy();
 
-    Simulator::Stop (Seconds (endtime));
-
-    AnimationInterface anim (animFile);    
-
-    Simulator::Schedule(Seconds(12), &RevertDirection, mobileNodes,true);
-    
-    Simulator::Run ();
-    Simulator::Destroy ();
-
-    return 0;
-  }
-
+  return 0;
 }
 
-int main(int argc, char* argv[])
+} // namespace ns3
+
+int
+main(int argc, char* argv[])
 {
   return ns3::main(argc, argv);
 }

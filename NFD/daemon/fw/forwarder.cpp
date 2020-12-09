@@ -287,8 +287,17 @@ Forwarder::onInterestFinalize(const shared_ptr<pit::Entry>& pitEntry)
 void
 Forwarder::onIncomingData(const FaceEndpoint& ingress, const Data& data)
 {
-  // receive Data
-  std::cout<<"ndn.Forwarder onIncomingData()  I have received the data on face type: "<<ingress.face.getLinkType()<<"on node node id: "<<GetCurrentNode()->GetId()<<std::endl;
+  ns3::Ptr<ns3::Node> currentNode=GetCurrentNode();
+  if (currentNode->GetId()==0)
+    std::cout<<"Printing location before setting up data"<<std::endl;
+  PrintLocations(data);
+  SetCurrentNodeLocationInDataPacket(data);
+  if (currentNode->GetId()==0)
+    std::cout<<"Printing location after setting up data"<<std::endl;
+  PrintLocations(data);
+  // receive Data Atif-Code:  
+  //std::cout<<"ndn.Forwarder onIncomingData()  I have received the data on face type: "<<ingress.face.getLinkType()<<"on node node id: "<<GetCurrentNode()->GetId()<<std::endl;
+  
   NFD_LOG_DEBUG("onIncomingData in=" << ingress << " data=" << data.getName());
   data.setTag(make_shared<lp::IncomingFaceIdTag>(ingress.face.getId()));
   ++m_counters.nInData;
@@ -393,7 +402,7 @@ void
 Forwarder::onDataUnsolicited(const FaceEndpoint& ingress, const Data& data)
 {
   // Atif-Code 
-  std::cout<<"ndn.Forwarder onDataunsolicted() unsolicted data received named: "<<data.getName()<<" node-id: "<<GetCurrentNode()->GetId()<<std::endl;
+ // std::cout<<"ndn.Forwarder onDataunsolicted() unsolicted data received named: "<<data.getName()<<" node-id: "<<GetCurrentNode()->GetId()<<std::endl;
   
   // accept to cache?
   fw::UnsolicitedDataDecision decision = m_unsolicitedDataPolicy->decide(ingress.face, data);
@@ -408,7 +417,8 @@ Forwarder::onDataUnsolicited(const FaceEndpoint& ingress, const Data& data)
 void
 Forwarder::onOutgoingData(const Data& data, const FaceEndpoint& egress)
 {
-std::cout<<"ndn.Forwarder onOutgoingData()  I am validating for the forwarding of the Data: Link Type:"<<egress.face.getLinkType()<<std::endl;
+   // Atif-Code: 
+  //std::cout<<"ndn.Forwarder onOutgoingData()  I am validating for the forwarding of the Data: Link Type:"<<egress.face.getLinkType()<<std::endl;
   if (egress.face.getId() == face::INVALID_FACEID) {
     NFD_LOG_WARN("onOutgoingData out=(invalid) data=" << data.getName());
     return;
@@ -424,8 +434,8 @@ std::cout<<"ndn.Forwarder onOutgoingData()  I am validating for the forwarding o
     return;
   }
 
-// Atif-Code
-std::cout<<"ndn.Forwarder onOutgoingData()  I am forwarding the Data"<<std::endl;
+  // Atif-Code:
+  //std::cout<<"ndn.Forwarder onOutgoingData()  I am forwarding the Data"<<std::endl;
   // TODO traffic manager
 
   // send Data
@@ -623,6 +633,39 @@ Forwarder::insertDeadNonceList(pit::Entry& pitEntry, Face* upstream)
   }
 }
 
+void 
+Forwarder::SetCurrentNodeLocationInDataPacket(const Data& data){
+  std::tuple<double,double,double> currenNodeLocation=CurrentNodeLocation();
+  lp::GeoTag geoTag(currenNodeLocation);
+  data.setTag<lp::GeoTag>(std::make_shared<lp::GeoTag>(geoTag));
+}
+
+
+void 
+Forwarder::PrintLocations(const Data& data){
+
+  ns3::Ptr<ns3::Node> currentNode= GetCurrentNode();
+  if (currentNode->GetId()==0)
+  {
+    //Atif-Code: Printing current location of the node
+    CurrentNodeLocation();
+
+     //Atif-Code: getting geo tag
+    std::shared_ptr<lp::GeoTag> tag = data.getTag<lp::GeoTag>();
+    if(tag == nullptr)
+    {
+        std::cout<<"My Custom Tag value is: null"<<std::endl;
+    }
+    else
+    {
+      std::tuple<double, double, double> location=tag->getPos();
+      std::cout<<"ndn.forwrder PrintLocations()  Geo tag x location: "<<std::get<0>(location)<<"node-id:  "<<GetCurrentNode()->GetId()<<std::endl;
+      std::cout<<"ndn.forwrder PrintLocations()  Geo tag y location: "<<std::get<1>(location)<<"node-id:  "<<GetCurrentNode()->GetId()<<std::endl;
+      std::cout<<"ndn.forwrder PrintLocations()  Geo tag z location: "<<std::get<2>(location)<<"node-id:  "<<GetCurrentNode()->GetId()<<std::endl;
+    }
+  }
+}
+
 ns3::Ptr<ns3::Node> 
 Forwarder::GetCurrentNode()
 {
@@ -635,20 +678,20 @@ Forwarder::GetCurrentNode()
 }
 
 std::tuple<double,double,double>
-Forwarder::GetCurrentNodeLocation()
+Forwarder::CurrentNodeLocation()
 {
     std::tuple<double,double,double> currentLocation;
     if (ns3::Simulator::GetContext() < 1000000) {
 
         ns3::Ptr<ns3::Node> node = ns3::NodeList::GetNode(ns3::Simulator::GetContext());
         uint32_t nodeId = node->GetId();
-        std::cout<<"ndn.Forwarder getCurrentNodeLocation(): node-id:  "<<nodeId<<std::endl;
+        //std::cout<<"ndn.Forwarder getCurrentNodeLocation(): node-id:  "<<nodeId<<std::endl;
         ns3::Ptr<ns3::MobilityModel> mobility = node->GetObject<ns3::MobilityModel>();
         if (mobility!=nullptr)
         {
-          std::cout<<"ndn.Forwarder getCurrentNodeLocation(): x-postion:  "<<mobility->GetPosition().x<<std::endl;
-          std::cout<<"ndn.Forwarder getCurrentNodeLocation(): y-postion:  "<<mobility->GetPosition().y<<std::endl;
-          std::cout<<"ndn.Forwarder getCurrentNodeLocation(): z-postion:  "<<mobility->GetPosition().z<<std::endl;
+          // std::cout<<"ndn.Forwarder getCurrentNodeLocation(): x-postion:  "<<mobility->GetPosition().x<<std::endl;
+          // std::cout<<"ndn.Forwarder getCurrentNodeLocation(): y-postion:  "<<mobility->GetPosition().y<<std::endl;
+          // std::cout<<"ndn.Forwarder getCurrentNodeLocation(): z-postion:  "<<mobility->GetPosition().z<<std::endl;
           currentLocation = {mobility->GetPosition().x,mobility->GetPosition().y,mobility->GetPosition().z};
         }
         else
@@ -670,15 +713,12 @@ Forwarder::getSTValues()
  
   for (std::vector<Forwarder::STValue>::iterator it=st_valueCollection.begin(); it!=st_valueCollection.end();++it)
   {
-    std::cout<<"ndn.Forwarder getSTValues(): printing static table values."<<std::endl;
-    std::cout<<"ndn.Forwarder getSTValues(): printing static table values: appType:"<<it->appType<<std::endl;
-    std::cout<<"ndn.Forwarder getSTValues(): printing static table values: contentType."<<it->contentType<<std::endl;
-    std::cout<<"ndn.Forwarder getSTValues(): printing static table values: spatialRange."<<it->spatialRange<<std::endl;
-    std::cout<<"ndn.Forwarder getSTValues(): printing static table values: temporalRange."<<it->temporalRange<<std::endl;
+    // std::cout<<"ndn.Forwarder getSTValues(): printing static table values."<<std::endl;
+    // std::cout<<"ndn.Forwarder getSTValues(): printing static table values: appType:"<<it->appType<<std::endl;
+    // std::cout<<"ndn.Forwarder getSTValues(): printing static table values: contentType."<<it->contentType<<std::endl;
+    // std::cout<<"ndn.Forwarder getSTValues(): printing static table values: spatialRange."<<it->spatialRange<<std::endl;
+    // std::cout<<"ndn.Forwarder getSTValues(): printing static table values: temporalRange."<<it->temporalRange<<std::endl;
   }
-  
-  
-  
   return st_valueCollection;
 }
 

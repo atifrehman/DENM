@@ -293,8 +293,15 @@ getSTValues();
 // Atif-Code: Spatial Temporal Values End
 
 private:
+
+void 
+SetCurrentNodeLocationInDataPacket(const Data& data);
+
+void 
+PrintLocations(const Data& data);
+
 std::tuple<double,double,double>
-GetCurrentNodeLocation();
+CurrentNodeLocation();
 
 ns3::Ptr<ns3::Node> 
 GetCurrentNode();
