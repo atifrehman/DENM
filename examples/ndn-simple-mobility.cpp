@@ -40,14 +40,14 @@ void RevertDirection(NodeContainer consumers, bool revert) //DEBUG purpose
     mobile.Install(consumers);
     ////// Setting each mobile consumer 100m apart from each other
     Ptr<ConstantVelocityMobilityModel> cvmm = consumers.Get(0)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos (450, 100, 0);
-    Vector vel (0, -50, 0); //y axis backward direction
+    Vector pos (0, -100, 0);
+    Vector vel (50, 0, 0); //y axis backward direction
     cvmm->SetPosition(pos);
     cvmm->SetVelocity(vel);
     // consumer 2
     Ptr<ConstantVelocityMobilityModel> cvmm1 = consumers.Get(1)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos1 (425, -300, 0);
-    Vector vel1 (0, 50, 0);   //y axis forward direction
+    Vector pos1 (300, 0, 0);
+    Vector vel1 (0, 0, 0);   //y axis forward direction
     cvmm1->SetPosition(pos1);
     cvmm1->SetVelocity(vel1);
 
@@ -62,14 +62,14 @@ void RevertDirection(NodeContainer consumers, bool revert) //DEBUG purpose
     mobile.Install(consumers);
     ////// Setting each mobile consumer 100m apart from each other
     Ptr<ConstantVelocityMobilityModel> cvmm = consumers.Get(0)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos (450, -300, 0);
-    Vector vel (0, 50, 0);
+    Vector pos (900, 0, 0);
+    Vector vel (-50, 0, 0);
     cvmm->SetPosition(pos);
     cvmm->SetVelocity(vel);
     // consumer 2
     Ptr<ConstantVelocityMobilityModel> cvmm1 = consumers.Get(1)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos1 (425, 100, 0);
-    Vector vel1 (0, -50, 0);   
+    Vector pos1 (300, 0, 0);
+    Vector vel1 (0, 0, 0);   
     cvmm1->SetPosition(pos1);
     cvmm1->SetVelocity(vel1);
 
@@ -131,14 +131,14 @@ main(int argc, char* argv[])
     mobile.Install(nodes);
     ////// Setting position and velocity of mobile node 1
     Ptr<ConstantVelocityMobilityModel> cvmm = nodes.Get(0)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos (450, -300, 0);
-    Vector vel (0, 50, 0);
+    Vector pos (0, -100, 0);
+    Vector vel (50, 0, 0);
     cvmm->SetPosition(pos);
     cvmm->SetVelocity(vel);
      ////// Setting position and velocity of mobile node 2
     Ptr<ConstantVelocityMobilityModel> cvmm1 = nodes.Get(1)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos1 (425, 100, 0);
-    Vector vel1 (0, -50, 0);
+    Vector pos1 (425, 0, 0);
+    Vector vel1 (0, 0, 0);
     cvmm1->SetPosition(pos1);
     cvmm1->SetVelocity(vel1);
 

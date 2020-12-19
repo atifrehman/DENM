@@ -31,7 +31,8 @@
 #include <ndn-cxx/lp/tags.hpp>
 #include "utils/ndn-ns3-packet-tag.hpp"
 #include "utils/ndn-rtt-mean-deviation.hpp"
-
+#include <ns3/node-list.h>
+#include <ns3/node.h>
 #include <ndn-cxx/lp/tags.hpp>
 
 #include <boost/lexical_cast.hpp>
@@ -225,6 +226,8 @@ if(tag == nullptr){
 }
 else{
   std::tuple<double, double, double> location=tag->getPos();
+  std::cout<<"ndn.consumer onData()  Node-Id: "<<GetCurrentNode()->GetId()<<std::endl;
+  std::cout<<"ndn.consumer onData()  InterestName: "<<data->getName().toUri()<<std::endl;
   std::cout<<"ndn.consumer onData()  Geo tag x location: "<<std::get<0>(location)<<std::endl;
   std::cout<<"ndn.consumer onData()  Geo tag y location: "<<std::get<1>(location)<<std::endl;
   std::cout<<"ndn.consumer onData()  Geo tag z location: "<<std::get<2>(location)<<std::endl;
@@ -264,6 +267,17 @@ else{
   m_retxSeqs.erase(seq);
 
   m_rtt->AckSeq(SequenceNumber32(seq));
+}
+
+ns3::Ptr<ns3::Node> 
+Consumer::GetCurrentNode()
+{
+  ns3::Ptr<ns3::Node> currentNode;
+  if (ns3::Simulator::GetContext() < 100000) 
+  {
+        currentNode = ns3::NodeList::GetNode(ns3::Simulator::GetContext());
+  }
+  return currentNode;
 }
 
 void

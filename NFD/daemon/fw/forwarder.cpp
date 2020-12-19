@@ -24,7 +24,7 @@
  */
 
 #include "forwarder.hpp"
-
+#include "../../../model/ndn-l3-protocol.hpp"
 #include "algorithm.hpp"
 #include "best-route-strategy2.hpp"
 #include "strategy.hpp"
@@ -126,7 +126,7 @@ Forwarder::onIncomingInterest(const FaceEndpoint& ingress, const Interest& inter
   }
 
   //Atif:Code 
-  getSTValues();
+  //getSTValues();
 
   // PIT insert
   shared_ptr<pit::Entry> pitEntry = m_pit.insert(interest).first;
@@ -287,14 +287,9 @@ Forwarder::onInterestFinalize(const shared_ptr<pit::Entry>& pitEntry)
 void
 Forwarder::onIncomingData(const FaceEndpoint& ingress, const Data& data)
 {
-  ns3::Ptr<ns3::Node> currentNode=GetCurrentNode();
-  if (currentNode->GetId()==0)
-    std::cout<<"Printing location before setting up data"<<std::endl;
-  PrintLocations(data);
-  SetCurrentNodeLocationInDataPacket(data);
-  if (currentNode->GetId()==0)
-    std::cout<<"Printing location after setting up data"<<std::endl;
-  PrintLocations(data);
+  
+  TemporalSpatialValidation(data);
+
   // receive Data Atif-Code:  
   //std::cout<<"ndn.Forwarder onIncomingData()  I have received the data on face type: "<<ingress.face.getLinkType()<<"on node node id: "<<GetCurrentNode()->GetId()<<std::endl;
   
@@ -318,7 +313,28 @@ Forwarder::onIncomingData(const FaceEndpoint& ingress, const Data& data)
     this->onDataUnsolicited(ingress, data);
 
     // Atif-Code Forwarding unsolicited Data on the ingress face (adhoc)
-     this->onOutgoingData(data, ingress);
+
+    if (ns3::Simulator::GetContext() < 1000) // this check prevents 4535459 value of Context, I am not sure why it returns 4535459
+    {
+      ns3::Ptr<ns3::Node> node = ns3::NodeList::GetNode(ns3::Simulator::GetContext()); // Get Current node from simulator context
+      ns3::Ptr<ns3::ndn::L3Protocol> l3Object = node->GetObject<ns3::ndn::L3Protocol>(); // Getting l3 Object
+
+      //std::cout << "Node Id :" << node->GetId() << std::endl;
+
+      // iteratation over face table
+      for (auto & face : l3Object->getForwarder()->m_faceTable)
+      {
+
+       // std::cout << "Face Id :" << face.getId() << std::endl;
+        if(face.getId()==257){
+        this->onOutgoingData(data, FaceEndpoint(face,face.getId()));
+        }
+
+      }
+    }
+
+
+
     return;
   }
 
@@ -640,6 +656,166 @@ Forwarder::SetCurrentNodeLocationInDataPacket(const Data& data){
   data.setTag<lp::GeoTag>(std::make_shared<lp::GeoTag>(geoTag));
 }
 
+bool 
+Forwarder::TemporalSpatialValidation(Data data){
+  ns3::Ptr<ns3::Node> currentNode = GetCurrentNode();
+  if (currentNode->GetId()!=1)
+  {
+    
+    
+    if (data.getName().toUri().find("denm") != std::string::npos) {
+    
+    std::vector<std::string> nameComponents=SplitString(data.getName().toUri(),'/');
+    std::string applicationType= nameComponents[1];
+    std::string contentTpe= nameComponents[2];
+    std::string eventLocation= nameComponents[3];
+    std::string eventTime= nameComponents[4];
+    
+    // std::cout<<"nfd.Forwader TemporalSpatialValidation() applicationType: "<<applicationType<<std::endl;
+    // std::cout<<"nfd.Forwader TemporalSpatialValidation() contentType: "<<contentTpe<<std::endl;
+    // std::cout<<"nfd.Forwader TemporalSpatialValidation() eventLocation: "<<eventLocation<<std::endl;
+    // std::cout<<"nfd.Forwader TemporalSpatialValidation() eventTime: "<<eventTime<<std::endl; 
+    
+    Forwarder::STValue stRange=getSingleSTValue(std::stoi(applicationType),std::stoi(contentTpe));
+    bool timeValidity=TimeValidity(std::stoi(eventTime),stRange.temporalRange);
+    bool spatialValidity=SpatialValidity(eventLocation,stRange.spatialRange);
+    bool angleValidity=AngleValidity(eventLocation,100);
+
+    if (timeValidity)
+    {
+      std::cout<<"Temporal Validity Passed"<<std::endl;
+      if (spatialValidity)
+      {
+         std::cout<<"Spatial Validity Passed"<<std::endl;
+        if (angleValidity)
+        {
+         std::cout<<"Angle Validity Passed"<<std::endl;
+          n_packet_transmissions++;
+          std::cout<<"ndn.Forwarder Total Packet Processed  Node-Id: "<<GetCurrentNode()->GetId()<<" Transmissions: "<<n_packet_transmissions<<std::endl;
+    
+        }
+        
+      }
+      
+    }
+    
+  }
+  }
+  
+  
+  
+ 
+
+
+ 
+
+  // ns3::Ptr<ns3::Node> currentNode=GetCurrentNode();
+  // if (currentNode->GetId()==0)
+  //   std::cout<<"Printing location before setting up data"<<std::endl;
+  // PrintLocations(data);
+  // SetCurrentNodeLocationInDataPacket(data);
+  // if (currentNode->GetId()==0)
+  //   std::cout<<"Printing location after setting up data"<<std::endl;
+  // PrintLocations(data);
+}
+
+
+bool
+Forwarder::TimeValidity(int eventTime, int timeThresholdByApplicationType){
+  int currentTime=CurrentTime();
+  std::cout<<"Temporal DIfference: "<<(currentTime-eventTime)<<std::endl;
+  if ((currentTime-eventTime)<timeThresholdByApplicationType)
+  {
+    return true;
+  }
+  return false;
+}
+
+bool
+Forwarder::AngleValidity(std::string eventLocation,  int angleThresholdByApplicationType)
+{
+  std::vector<std::string> eventLocationCollection=SplitString(eventLocation,'-');
+  std::tuple<double,double,double> currentNodeLocation=CurrentNodeLocation();
+  double angle=abs(AngleCalculate(std::stod(eventLocationCollection[0]),std::stod(eventLocationCollection[1]),std::get<0>(currentNodeLocation),std::get<1>(currentNodeLocation)));
+  std::cout<<"Angle Value is: "<<angle<<std::endl;
+  if (angle<angleThresholdByApplicationType)
+  {
+    return true;
+  }
+  return false;
+}
+
+bool
+Forwarder::SpatialValidity(std::string eventLocation, int distanceThresholdByApplicationType){
+  
+  std::vector<std::string> eventLocationCollection=SplitString(eventLocation,'-');
+  std::tuple<double,double,double> currentNodeLocation=CurrentNodeLocation();
+  
+  std::cout<<"nfd.SpatialValidity() Event Location X: "<<std::stod(eventLocationCollection[0])<<std::endl;
+  std::cout<<"nfd.SpatialValidity() Event Location Y: "<<std::stod(eventLocationCollection[1])<<std::endl;
+  std::cout<<"nfd.SpatialValidity() Node Location X: "<<std::get<0>(currentNodeLocation)<<std::endl;
+  std::cout<<"nfd.SpatialValidity() Node Location Y: "<<std::get<1>(currentNodeLocation)<<std::endl;
+
+  double distance=DistanceCalculate(std::stod(eventLocationCollection[0]),std::stod(eventLocationCollection[1]),std::get<0>(currentNodeLocation),std::get<1>(currentNodeLocation));
+  
+  std::cout<<"Distance of current node from producer: "<<distance<<std::endl;
+
+  if (distance<distanceThresholdByApplicationType)
+  {
+    return true;
+  }
+  return false;
+}
+
+double 
+Forwarder::DistanceCalculate(double x1, double y1, double x2, double y2)
+{
+	double x = x1 - x2; //calculating number to square in next step
+	double y = y1 - y2;
+	double dist;
+
+	dist = pow(x, 2) + pow(y, 2);       //calculating Euclidean distance
+	dist = sqrt(dist);                  
+
+	return dist;
+}
+double 
+Forwarder::AngleCalculate(double x1, double y1, double x2, double y2)
+{
+	double angle=atan2((y2-y1),(x2-x1));            
+  angle=(angle*180)/3.14;
+	return angle;
+}
+int
+Forwarder::CurrentTime()
+{
+ndn::time::steady_clock::TimePoint now = ::ndn::time::steady_clock::now(); 
+ndn::time::milliseconds milliseconds = ::ndn::time::duration_cast<::ndn::time::milliseconds>(now.time_since_epoch());
+return milliseconds.count(); 
+}
+
+std::vector<std::string> 
+Forwarder::SplitString(std::string stringValue,  char c)
+{
+	std::string buff{""};
+	std::vector<std::string> stringCollection;
+	
+	for(auto n:stringValue)
+	{
+		if(n != c) 
+      buff+=n; 
+    else
+		  if(n == c && buff != "") 
+      { 
+        stringCollection.push_back(buff); 
+        buff = ""; 
+      }
+	}
+	if(buff != "") stringCollection.push_back(buff);
+	
+	return stringCollection;
+}
+
 
 void 
 Forwarder::PrintLocations(const Data& data){
@@ -701,14 +877,46 @@ Forwarder::CurrentNodeLocation()
    }
    return currentLocation;
 }
+
+Forwarder::STValue
+Forwarder::getSingleSTValue(int applicationType, int contentType)
+{
+ std::vector<Forwarder::STValue> st_valueCollection = getSTValues();
+ Forwarder::STValue stValueItem;
+ for (std::vector<STValue>::iterator it = st_valueCollection.begin() ; it != st_valueCollection.end(); ++it){
+   if (it->appType==applicationType && it->contentType==contentType)
+   {
+     return *it;
+   } 
+ }
+}
+
 std::vector<Forwarder::STValue>
 Forwarder::getSTValues()
 {
   //static table to the nodes for scope comparsion 
   std::vector<Forwarder::STValue> st_valueCollection; 
-  st_valueCollection.push_back({1,0011, 100, 10});
-  st_valueCollection.push_back({0,0011, 100, 5});
-  st_valueCollection.push_back({1,1101, 100, 10});
+
+  //st_valueCollection.push_back({appType,contentType, spatialRange, temporalRange});
+  st_valueCollection.push_back({0,0, 201, 10});
+  st_valueCollection.push_back({0,1, 201, 10});
+  st_valueCollection.push_back({0,2, 201, 5});
+  st_valueCollection.push_back({0,3, 201, 5});
+  
+  st_valueCollection.push_back({1,0, 201, 10});
+  st_valueCollection.push_back({1,1, 201, 10});
+  st_valueCollection.push_back({1,2, 201, 5});
+  st_valueCollection.push_back({1,3, 201, 5});
+
+  st_valueCollection.push_back({2,0, 201, 10});
+  st_valueCollection.push_back({2,1, 201, 10});
+  st_valueCollection.push_back({2,2, 201, 5});
+  st_valueCollection.push_back({2,3, 201, 5});
+
+  st_valueCollection.push_back({3,0, 201, 10});
+  st_valueCollection.push_back({3,1, 201, 10});
+  st_valueCollection.push_back({3,2, 201, 5});
+  st_valueCollection.push_back({3,3, 201, 5});
 
  
   for (std::vector<Forwarder::STValue>::iterator it=st_valueCollection.begin(); it!=st_valueCollection.end();++it)

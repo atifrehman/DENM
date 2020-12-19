@@ -58,13 +58,27 @@ protected:
 
   virtual void
   StopApplication(); // Called at time specified by Stop
-// Atif-Code 
+// Atif-Code:  Start
+  
   void
   ScheduleAdvertisementPacket(bool isFromApplicationStarted);// scdheuling push packets
+  
   void 
   PushAdvertisementData(); // genering name for pushAdvertisment packet
+  
   void 
   Push(shared_ptr<const Interest> interest);
+  
+  shared_ptr<Name>
+  GetDENMDataName();
+
+  std::string
+  CurrentNodeLocation();
+  
+  int
+  CurrentTime();
+
+ // Atif-Code: End 
 private:
   Name m_prefix;
   EventId m_sendEvent; 

@@ -23,12 +23,17 @@
 #include "ns3/uinteger.h"
 #include "ns3/packet.h"
 #include "ns3/simulator.h"
-
+#include "ns3/random-variable-stream.h"
 #include "model/ndn-l3-protocol.hpp"
 #include "helper/ndn-fib-helper.hpp"
 #include <ndn-cxx/lp/tags.hpp>
 #include <memory>
+#include <string.h>
 
+#include <ns3/node-list.h>
+#include <ns3/node.h>
+#include "ns3/mobility-model.h"
+#include "ns3/core-module.h"
 NS_LOG_COMPONENT_DEFINE("ndn.Producer");
 
 namespace ns3 {
@@ -105,42 +110,25 @@ Producer::ScheduleAdvertisementPacket(bool isFromApplicationStarted)
     isFromApplicationStarted = false;
   }
   else if (!m_sendEvent.IsRunning())
-    m_sendEvent = Simulator::Schedule((Seconds(1.0 / 20)),
+    m_sendEvent = Simulator::Schedule((Seconds(1.0 / 100)),
                                       &Producer::PushAdvertisementData, this);
 }
 
-// Atif-Code 
-void
-Producer::PushAdvertisementData(){
-
-  shared_ptr<Name> name = make_shared<Name>("/vndnPrefix/");
-  shared_ptr<Interest> interest = make_shared<Interest>();
-  interest->setName(*name);
-  interest->setCanBePrefix(false);
-
-  OnInterest(interest);
-
-}
 
 void
 Producer::OnInterest(shared_ptr<const Interest> interest)
 {
   App::OnInterest(interest); // tracing inside
-
-
-
-
   NS_LOG_FUNCTION(this << interest);
 
   if (!m_active)
     return;
 
   Name dataName(interest->getName());
-  // dataName.append(m_postfix);
-  // dataName.appendVersion();
 
   auto data = make_shared<Data>();
   data->setName(dataName);
+ // std::cout<<"ndn.Producer onData()  InterestName: "<<data->getName().toUri()<<std::endl;
   data->setFreshnessPeriod(::ndn::time::milliseconds(m_freshness.GetMilliSeconds()));
 
   data->setContent(make_shared< ::ndn::Buffer>(m_virtualPayloadSize));
@@ -182,5 +170,72 @@ Producer::OnInterest(shared_ptr<const Interest> interest)
   ScheduleAdvertisementPacket(false);
 }
 
+// Atif-Code: 
+
+void
+Producer::PushAdvertisementData(){
+
+  shared_ptr<Name> name = GetDENMDataName();
+  shared_ptr<Interest> interest = make_shared<Interest>();
+  interest->setName(*name);
+  interest->setCanBePrefix(false);
+
+  OnInterest(interest);
+
+}
+
+shared_ptr<Name>
+Producer::GetDENMDataName(){
+  // We have to set content type, application type, current time, current location of producer 
+  // application type: 0,1,2,3
+  // content type: 0,1,2,3
+  // current in string format
+  // curren location (x,y) in string format
+
+  Ptr<UniformRandomVariable> m_rand(CreateObject<UniformRandomVariable>());
+  std::string applicationType= std::to_string(std::ceil(m_rand->GetValue(0, 3)));
+  std::string contentType=std::to_string(std::ceil(m_rand->GetValue(0, 3)));
+  std::string currentLocation=CurrentNodeLocation();
+  std::string currentTime= std::to_string(CurrentTime());
+  
+  std::string nameString="/denm/"+applicationType+"/"+contentType+"/"+currentLocation+"/"+currentTime+"/";
+  
+  //std::cout<<"ndn.Producer GetDENMDataName(): name value: "<<nameString<<std::endl;
+
+  shared_ptr<Name> name = make_shared<Name>(nameString);
+
+  return name;
+}
+std::string
+Producer::CurrentNodeLocation()
+{
+    std::string currentLocation;
+    if (ns3::Simulator::GetContext() < 1000000) {
+
+        ns3::Ptr<ns3::Node> node = ns3::NodeList::GetNode(ns3::Simulator::GetContext());
+        uint32_t nodeId = node->GetId();
+        //std::cout<<"ndn.Forwarder getCurrentNodeLocation(): node-id:  "<<nodeId<<std::endl;
+        ns3::Ptr<ns3::MobilityModel> mobility = node->GetObject<ns3::MobilityModel>();
+        if (mobility!=nullptr)
+        {
+          currentLocation = std::to_string(mobility->GetPosition().x)+"-"+std::to_string(mobility->GetPosition().y)
+          +"-"+std::to_string(mobility->GetPosition().z);
+        }
+        else
+        {
+          std::cout<<"ndn.Producer getCurrentNodeLocation(): mobility return nullptr."<<std::endl;
+        }
+   }
+   return currentLocation;
+}
+int
+Producer::CurrentTime()
+{
+ndn::time::steady_clock::TimePoint now = ::ndn::time::steady_clock::now(); 
+ndn::time::milliseconds milliseconds = ::ndn::time::duration_cast<::ndn::time::milliseconds>(now.time_since_epoch());
+return milliseconds.count(); 
+}
+
+// Atif-Code: End
 } // namespace ndn
 } // namespace ns3

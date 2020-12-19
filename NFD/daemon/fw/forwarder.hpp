@@ -306,7 +306,37 @@ CurrentNodeLocation();
 ns3::Ptr<ns3::Node> 
 GetCurrentNode();
 
-  ForwarderCounters m_counters;
+bool 
+TemporalSpatialValidation(Data data);
+
+STValue
+getSingleSTValue(int appType, int contentType);
+
+std::vector<std::string> 
+SplitString(std::string stringValue,  char c);
+
+bool
+TimeValidity(int eventTime, int timeThresholdByApplicationType);
+
+bool
+SpatialValidity(std::string eventLocation, int distanceThresholdByApplicationType);
+
+bool
+AngleValidity(std::string eventLocation,  int angleThresholdByApplicationType);
+
+double 
+DistanceCalculate(double x1, double y1, double x2, double y2);
+
+double 
+AngleCalculate(double x1, double y1, double x2, double y2);
+
+int
+CurrentTime();
+
+int n_packet_transmissions=0;
+
+ForwarderCounters m_counters;
+
 
   FaceTable& m_faceTable;
   unique_ptr<fw::UnsolicitedDataPolicy> m_unsolicitedDataPolicy;
