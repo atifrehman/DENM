@@ -287,9 +287,26 @@ Forwarder::onInterestFinalize(const shared_ptr<pit::Entry>& pitEntry)
 void
 Forwarder::onIncomingData(const FaceEndpoint& ingress, const Data& data)
 {
-  
-  TemporalSpatialValidation(data);
+  ns3::Ptr<ns3::Node> currentNode = GetCurrentNode();
+  if (currentNode->GetId()!=1)
+  {
+    if (data.getName().toUri().find("denm") != std::string::npos) 
+    {
+      bool isValidForForwarding=TemporalSpatialValidation(data);
+      if (isValidForForwarding)
+      {
+        n_packet_transmissions++;
+        std::cout<<"ndn.Forwarder Total Packet Processed  Node-Id: "<<GetCurrentNode()->GetId()<<" Transmissions: "<<n_packet_transmissions<<std::endl;
 
+      }
+      else
+      {
+          return; //drop
+      }
+      
+      
+    }
+  }
   // receive Data Atif-Code:  
   //std::cout<<"ndn.Forwarder onIncomingData()  I have received the data on face type: "<<ingress.face.getLinkType()<<"on node node id: "<<GetCurrentNode()->GetId()<<std::endl;
   
@@ -658,12 +675,9 @@ Forwarder::SetCurrentNodeLocationInDataPacket(const Data& data){
 
 bool 
 Forwarder::TemporalSpatialValidation(Data data){
-  ns3::Ptr<ns3::Node> currentNode = GetCurrentNode();
-  if (currentNode->GetId()!=1)
-  {
-    
-    
-    if (data.getName().toUri().find("denm") != std::string::npos) {
+  
+  bool isValidationPassed=false;
+  
     
     std::vector<std::string> nameComponents=SplitString(data.getName().toUri(),'/');
     std::string applicationType= nameComponents[1];
@@ -690,17 +704,14 @@ Forwarder::TemporalSpatialValidation(Data data){
         if (angleValidity)
         {
          std::cout<<"Angle Validity Passed"<<std::endl;
-          n_packet_transmissions++;
-          std::cout<<"ndn.Forwarder Total Packet Processed  Node-Id: "<<GetCurrentNode()->GetId()<<" Transmissions: "<<n_packet_transmissions<<std::endl;
-    
+         isValidationPassed=true;
+          
         }
         
       }
       
     }
-    
-  }
-  }
+    return isValidationPassed;
   
   
   
