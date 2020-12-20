@@ -131,6 +131,9 @@ protected:
   Time
   GetRetxTimer() const;
 
+  ns3::Ptr<ns3::Node> 
+  GetCurrentNode();
+
 protected:
   Ptr<UniformRandomVariable> m_rand; ///< @brief nonce generator
 
