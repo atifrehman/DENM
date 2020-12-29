@@ -37,6 +37,7 @@
 #include <ns3/node.h>
 #include "ns3/mobility-model.h"
 #include "ns3/core-module.h"
+#include "ns3/random-variable-stream.h"
 namespace nfd {
 
 NFD_LOG_INIT(Forwarder);
@@ -287,17 +288,37 @@ Forwarder::onInterestFinalize(const shared_ptr<pit::Entry>& pitEntry)
 void
 Forwarder::onIncomingData(const FaceEndpoint& ingress, const Data& data)
 {
+  // std::cout<<"Data Name: "<<data.getName().toUri()<<std::endl;
+  std::string data_name=data.getName().toUri();
+  int node_id=GetCurrentNode()->GetId();
+  int timerValue=0;
   ns3::Ptr<ns3::Node> currentNode = GetCurrentNode();
-  if (currentNode->GetId()!=1)
+  if (currentNode->GetId()!=0)
   {
     if (data.getName().toUri().find("denm") != std::string::npos) 
     {
+
       bool isValidForForwarding=TemporalSpatialValidation(data);
+
+      
       if (isValidForForwarding)
       {
-        n_packet_transmissions++;
-        std::cout<<"ndn.Forwarder Total Packet Processed  Node-Id: "<<GetCurrentNode()->GetId()<<" Transmissions: "<<n_packet_transmissions<<std::endl;
+        // duplication check and event removal
+        
 
+        auto ev_association=GetEventNameAssociation(node_id,data_name);
+        if (ev_association.node_id==-1) // -1 node id represent that no record
+        {
+
+          timerValue=GetTimerValue(data);
+          n_packet_transmissions++;
+          std::cout<<"ndn.Forwarder Total Packet Processed  Node-Id: "<<GetCurrentNode()->GetId()<<" Transmissions: "<<n_packet_transmissions<<std::endl;
+        }
+        else
+        { // data is duplicated, remove association and relevant event 
+          std::cout<<"ndn.Forwarder onIncomingData Data is duplicated emove association and relevant event. Node-Id"<<GetCurrentNode()->GetId()<<std::endl;
+          RemoveEventNameAssociation(ev_association.event_id,node_id,data_name);
+        }
       }
       else
       {
@@ -344,7 +365,11 @@ Forwarder::onIncomingData(const FaceEndpoint& ingress, const Data& data)
 
        // std::cout << "Face Id :" << face.getId() << std::endl;
         if(face.getId()==257){
-        this->onOutgoingData(data, FaceEndpoint(face,face.getId()));
+         //this->onOutgoingData(data, FaceEndpoint(face,face.getId()));
+          ns3::Time time = ns3::MilliSeconds (timerValue);
+          ns3::EventId eventId = ns3::Simulator::Schedule (time, &Forwarder::onOutgoingData, this, data, FaceEndpoint(face,face.getId()));
+          
+         SetEventNameAssociation(eventId,node_id,data_name,timerValue);
         }
 
       }
@@ -673,61 +698,79 @@ Forwarder::SetCurrentNodeLocationInDataPacket(const Data& data){
   data.setTag<lp::GeoTag>(std::make_shared<lp::GeoTag>(geoTag));
 }
 
+int 
+Forwarder::GetTimerValue(Data data){
+
+  ns3::Ptr<ns3::UniformRandomVariable> m_rand(ns3::CreateObject<ns3::UniformRandomVariable>());
+  std::tuple<double, double, double> current_node_location=CurrentNodeLocation();
+  std::tuple<double, double, double>  event_location=GetEventLocationFromDataName(data);
+  std::tuple<double, double, double> previous_node_location=GetNodeLocationFromDataPacket(data);
+
+  double distance_previous_node=DistanceCalculate(std::get<0>(previous_node_location),std::get<1>(previous_node_location),std::get<0>(event_location),std::get<0>(event_location));
+  double distance_current_node=DistanceCalculate(std::get<0>(current_node_location),std::get<1>(current_node_location),std::get<0>(event_location),std::get<0>(event_location));
+  double delay_random=m_rand->GetValue(0, 2);
+  double forward_timer=delay_max*((1-(((distance_previous_node)-(distance_current_node))/rr_max)))+delay_random;
+  
+  std::cout<<"Forwarder::GetTimerValue: Timer Value:  "<<std::ceil(forward_timer)<<std::endl;
+  
+  return std::ceil(forward_timer);
+}
+
+std::tuple<double, double, double> 
+Forwarder::GetEventLocationFromDataName(Data data){
+
+  std::vector<std::string> nameComponents= SplitString(data.getName().toUri(),'/');
+  std::string eventLocation= nameComponents[3];
+  std::vector<std::string> event_location=SplitString(eventLocation,'-');
+
+  std::tuple<double, double, double> location={std::stod(event_location[0]),std::stod(event_location[1]),0};
+  return location;
+}
+
+
+std::tuple<double, double, double> 
+Forwarder::GetNodeLocationFromDataPacket(Data data){
+  std::shared_ptr<lp::GeoTag> tag = data.getTag<lp::GeoTag>();
+  std::tuple<double, double, double> location;
+   if(tag != nullptr)
+   {
+    location=tag->getPos();
+   }
+   return location;
+}
+
 bool 
 Forwarder::TemporalSpatialValidation(Data data){
-  
-  bool isValidationPassed=false;
-  
-    
-    std::vector<std::string> nameComponents=SplitString(data.getName().toUri(),'/');
-    std::string applicationType= nameComponents[1];
-    std::string contentTpe= nameComponents[2];
-    std::string eventLocation= nameComponents[3];
-    std::string eventTime= nameComponents[4];
-    
-    // std::cout<<"nfd.Forwader TemporalSpatialValidation() applicationType: "<<applicationType<<std::endl;
-    // std::cout<<"nfd.Forwader TemporalSpatialValidation() contentType: "<<contentTpe<<std::endl;
-    // std::cout<<"nfd.Forwader TemporalSpatialValidation() eventLocation: "<<eventLocation<<std::endl;
-    // std::cout<<"nfd.Forwader TemporalSpatialValidation() eventTime: "<<eventTime<<std::endl; 
-    
-    Forwarder::STValue stRange=getSingleSTValue(std::stoi(applicationType),std::stoi(contentTpe));
-    bool timeValidity=TimeValidity(std::stoi(eventTime),stRange.temporalRange);
-    bool spatialValidity=SpatialValidity(eventLocation,stRange.spatialRange);
-    bool angleValidity=AngleValidity(eventLocation,100);
 
-    if (timeValidity)
+  bool isValidationPassed=false;
+
+  std::vector<std::string> nameComponents=SplitString(data.getName().toUri(),'/');
+  std::string applicationType= nameComponents[1];
+  std::string contentTpe= nameComponents[2];
+  std::string eventLocation= nameComponents[3];
+  std::string eventTime= nameComponents[4];
+  
+  Forwarder::STValue stRange=getSingleSTValue(std::stoi(applicationType),std::stoi(contentTpe));
+  bool timeValidity=TimeValidity(std::stoi(eventTime),stRange.temporalRange);
+  bool spatialValidity=SpatialValidity(eventLocation,stRange.spatialRange);
+  bool angleValidity=AngleValidity(eventLocation,100);
+  if (timeValidity)
+  {
+    std::cout<<"Temporal Validity Passed"<<std::endl;
+    if (spatialValidity)
     {
-      std::cout<<"Temporal Validity Passed"<<std::endl;
-      if (spatialValidity)
+       std::cout<<"Spatial Validity Passed"<<std::endl;
+      if (angleValidity)
       {
-         std::cout<<"Spatial Validity Passed"<<std::endl;
-        if (angleValidity)
-        {
-         std::cout<<"Angle Validity Passed"<<std::endl;
-         isValidationPassed=true;
-          
-        }
+       std::cout<<"Angle Validity Passed"<<std::endl;
+       isValidationPassed=true;
         
       }
       
     }
-    return isValidationPassed;
-  
-  
-  
- 
-
-
- 
-
-  // ns3::Ptr<ns3::Node> currentNode=GetCurrentNode();
-  // if (currentNode->GetId()==0)
-  //   std::cout<<"Printing location before setting up data"<<std::endl;
-  // PrintLocations(data);
-  // SetCurrentNodeLocationInDataPacket(data);
-  // if (currentNode->GetId()==0)
-  //   std::cout<<"Printing location after setting up data"<<std::endl;
-  // PrintLocations(data);
+    
+  }
+  return isValidationPassed;
 }
 
 
@@ -762,10 +805,10 @@ Forwarder::SpatialValidity(std::string eventLocation, int distanceThresholdByApp
   std::vector<std::string> eventLocationCollection=SplitString(eventLocation,'-');
   std::tuple<double,double,double> currentNodeLocation=CurrentNodeLocation();
   
-  std::cout<<"nfd.SpatialValidity() Event Location X: "<<std::stod(eventLocationCollection[0])<<std::endl;
-  std::cout<<"nfd.SpatialValidity() Event Location Y: "<<std::stod(eventLocationCollection[1])<<std::endl;
-  std::cout<<"nfd.SpatialValidity() Node Location X: "<<std::get<0>(currentNodeLocation)<<std::endl;
-  std::cout<<"nfd.SpatialValidity() Node Location Y: "<<std::get<1>(currentNodeLocation)<<std::endl;
+  // std::cout<<"nfd.SpatialValidity() Event Location X: "<<std::stod(eventLocationCollection[0])<<std::endl;
+  // std::cout<<"nfd.SpatialValidity() Event Location Y: "<<std::stod(eventLocationCollection[1])<<std::endl;
+  // std::cout<<"nfd.SpatialValidity() Node Location X: "<<std::get<0>(currentNodeLocation)<<std::endl;
+  // std::cout<<"nfd.SpatialValidity() Node Location Y: "<<std::get<1>(currentNodeLocation)<<std::endl;
 
   double distance=DistanceCalculate(std::stod(eventLocationCollection[0]),std::stod(eventLocationCollection[1]),std::get<0>(currentNodeLocation),std::get<1>(currentNodeLocation));
   
@@ -909,36 +952,63 @@ Forwarder::getSTValues()
   std::vector<Forwarder::STValue> st_valueCollection; 
 
   //st_valueCollection.push_back({appType,contentType, spatialRange, temporalRange});
-  st_valueCollection.push_back({0,0, 201, 10});
-  st_valueCollection.push_back({0,1, 201, 10});
-  st_valueCollection.push_back({0,2, 201, 5});
-  st_valueCollection.push_back({0,3, 201, 5});
+  st_valueCollection.push_back({0,0, 201, 20});
+  st_valueCollection.push_back({0,1, 201, 20});
+  st_valueCollection.push_back({0,2, 201, 20});
+  st_valueCollection.push_back({0,3, 201, 20});
   
-  st_valueCollection.push_back({1,0, 201, 10});
-  st_valueCollection.push_back({1,1, 201, 10});
-  st_valueCollection.push_back({1,2, 201, 5});
-  st_valueCollection.push_back({1,3, 201, 5});
+  st_valueCollection.push_back({1,0, 201, 20});
+  st_valueCollection.push_back({1,1, 201, 20});
+  st_valueCollection.push_back({1,2, 201, 20});
+  st_valueCollection.push_back({1,3, 201, 20});
 
-  st_valueCollection.push_back({2,0, 201, 10});
-  st_valueCollection.push_back({2,1, 201, 10});
-  st_valueCollection.push_back({2,2, 201, 5});
-  st_valueCollection.push_back({2,3, 201, 5});
+  st_valueCollection.push_back({2,0, 201, 20});
+  st_valueCollection.push_back({2,1, 201, 20});
+  st_valueCollection.push_back({2,2, 201, 20});
+  st_valueCollection.push_back({2,3, 201, 20});
 
-  st_valueCollection.push_back({3,0, 201, 10});
-  st_valueCollection.push_back({3,1, 201, 10});
-  st_valueCollection.push_back({3,2, 201, 5});
-  st_valueCollection.push_back({3,3, 201, 5});
+  st_valueCollection.push_back({3,0, 201, 20});
+  st_valueCollection.push_back({3,1, 201, 20});
+  st_valueCollection.push_back({3,2, 201, 20});
+  st_valueCollection.push_back({3,3, 201, 20});
 
  
-  for (std::vector<Forwarder::STValue>::iterator it=st_valueCollection.begin(); it!=st_valueCollection.end();++it)
-  {
-    // std::cout<<"ndn.Forwarder getSTValues(): printing static table values."<<std::endl;
-    // std::cout<<"ndn.Forwarder getSTValues(): printing static table values: appType:"<<it->appType<<std::endl;
-    // std::cout<<"ndn.Forwarder getSTValues(): printing static table values: contentType."<<it->contentType<<std::endl;
-    // std::cout<<"ndn.Forwarder getSTValues(): printing static table values: spatialRange."<<it->spatialRange<<std::endl;
-    // std::cout<<"ndn.Forwarder getSTValues(): printing static table values: temporalRange."<<it->temporalRange<<std::endl;
-  }
+  // for (std::vector<Forwarder::STValue>::iterator it=st_valueCollection.begin(); it!=st_valueCollection.end();++it)
+  // {
+  //   // std::cout<<"ndn.Forwarder getSTValues(): printing static table values."<<std::endl;
+  //   // std::cout<<"ndn.Forwarder getSTValues(): printing static table values: appType:"<<it->appType<<std::endl;
+  //   // std::cout<<"ndn.Forwarder getSTValues(): printing static table values: contentType."<<it->contentType<<std::endl;
+  //   // std::cout<<"ndn.Forwarder getSTValues(): printing static table values: spatialRange."<<it->spatialRange<<std::endl;
+  //   // std::cout<<"ndn.Forwarder getSTValues(): printing static table values: temporalRange."<<it->temporalRange<<std::endl;
+  // }
   return st_valueCollection;
+}
+
+Forwarder::EventNameAssociation
+Forwarder::GetEventNameAssociation( int node_id, std::string data_name)
+{ 
+ ns3::EventId eventId;
+ Forwarder::EventNameAssociation empty_en_assocication = {eventId,-1,"",-1};
+ for (std::vector<EventNameAssociation>::iterator it = event_name_assoc_collection.begin() ; it != event_name_assoc_collection.end(); ++it)
+ {
+   if (it->node_id==node_id && it->data_name==data_name)
+   {
+     empty_en_assocication={it->event_id,it->node_id,it->data_name,it->timer_value};
+     break;
+   } 
+ }
+    return empty_en_assocication;
+}
+void
+Forwarder::SetEventNameAssociation(ns3::EventId  event_id, int node_id, std::string data_name,  int timer_value){
+  event_name_assoc_collection.push_back({event_id, node_id, data_name,timer_value});
+}
+void
+Forwarder::RemoveEventNameAssociation(ns3::EventId  event_id, int node_id, std::string data_name){
+
+  // Forwarder::EventNameAssociation removedValue=GetEventNameAssociation(node_id,data_name);
+  // event_name_assoc_collection.erase(std::remove(event_name_assoc_collection.begin(), event_name_assoc_collection.end(), removedValue), event_name_assoc_collection.end()); 
+  ns3::Simulator::Remove(event_id);
 }
 
 } // namespace nfd

@@ -333,6 +333,32 @@ AngleCalculate(double x1, double y1, double x2, double y2);
 int
 CurrentTime();
 
+int 
+GetTimerValue(Data data);
+
+std::tuple<double, double, double> 
+GetNodeLocationFromDataPacket(Data data);
+
+std::tuple<double, double, double> 
+GetEventLocationFromDataName(Data data);
+
+// Atif-Code: Spatial Temporal Values
+struct EventNameAssociation
+{
+  ns3::EventId  event_id;
+  int node_id;
+  std::string data_name;
+  int timer_value;
+};
+
+Forwarder::EventNameAssociation
+GetEventNameAssociation(int node_id, std::string data_name);
+void
+SetEventNameAssociation(ns3::EventId  event_id, int node_id, std::string data_name,  int timer_value);
+void
+RemoveEventNameAssociation(ns3::EventId  event_id, int node_id, std::string data_name);
+
+
 int n_packet_transmissions=0;
 
 ForwarderCounters m_counters;
@@ -350,6 +376,11 @@ ForwarderCounters m_counters;
   DeadNonceList      m_deadNonceList;
   NetworkRegionTable m_networkRegionTable;
   shared_ptr<Face>   m_csFace;
+  std::vector<EventNameAssociation> event_name_assoc_collection;
+
+  u_int32_t delay_max=2;
+  u_int32_t rr_max=200;
+
 
   // allow Strategy (base class) to enter pipelines
   friend class fw::Strategy;
