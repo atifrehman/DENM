@@ -31,54 +31,141 @@ namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE("ndn.WifiExample");
 
-void RevertDirection(NodeContainer consumers, bool revert) //DEBUG purpose
-    {
-    if(revert==true)
-    {
+int mobileNdesCount=2;
+int mobileNodesVelocity=50;
+int staticNodesCount=1;
+void RevertDirection(NodeContainer nodes, bool revert) //DEBUG purpose
+{
     MobilityHelper mobile; 
     mobile.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
-    mobile.Install(consumers);
-    ////// Setting each mobile consumer 100m apart from each other
-    Ptr<ConstantVelocityMobilityModel> cvmm = consumers.Get(0)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos (0, -100, 0);
-    Vector vel (50, 0, 0); //y axis backward direction
-    cvmm->SetPosition(pos);
-    cvmm->SetVelocity(vel);
-    // consumer 2
-    Ptr<ConstantVelocityMobilityModel> cvmm1 = consumers.Get(1)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos1 (300, 0, 0);
-    Vector vel1 (0, 0, 0);   //y axis forward direction
-    cvmm1->SetPosition(pos1);
-    cvmm1->SetVelocity(vel1);
+    mobile.Install(nodes);
+    if(revert==true)
+    {
 
-    Simulator::Schedule(Seconds(12), &RevertDirection, consumers,false);
+      // mobility for horizantal nodes at top
+      for (size_t i = 0; i < 1; i++)
+      {
+        Ptr<ConstantVelocityMobilityModel> cvmm = nodes.Get(i)->GetObject<ConstantVelocityMobilityModel> ();
+        Vector pos (0, -200, 0);
+        Vector vel (mobileNodesVelocity, 0, 0);
+        cvmm->SetPosition(pos);
+        cvmm->SetVelocity(vel);
+      }
+
+      // mobility for horizantal nodes at top
+      for (size_t i = 1; i < 2; i++)
+      {
+        Ptr<ConstantVelocityMobilityModel> cvmm1 = nodes.Get(i)->GetObject<ConstantVelocityMobilityModel> ();
+        Vector pos1 (100, -150, 0);
+        Vector vel1 (mobileNodesVelocity, 0, 0);
+        cvmm1->SetPosition(pos1);
+        cvmm1->SetVelocity(vel1);
+      }
+      Simulator::Schedule(Seconds(12), &RevertDirection, nodes,false);
     }
     else
     {
-         ////// Setting mobility model and movement parameters for mobile nodes
-    ////// ConstantVelocityMobilityModel is a subclass of MobilityModel
-    MobilityHelper mobile; 
-    mobile.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
-    mobile.Install(consumers);
-    ////// Setting each mobile consumer 100m apart from each other
-    Ptr<ConstantVelocityMobilityModel> cvmm = consumers.Get(0)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos (900, 0, 0);
-    Vector vel (-50, 0, 0);
+     // mobility for horizantal nodes at top
+      for (size_t i = 0; i < 1; i++)
+      {
+        Ptr<ConstantVelocityMobilityModel> cvmm = nodes.Get(i)->GetObject<ConstantVelocityMobilityModel> ();
+        Vector pos (750, -200, 0);
+        Vector vel (-mobileNodesVelocity, 0, 0);
+        cvmm->SetPosition(pos);
+        cvmm->SetVelocity(vel);
+      }
+      
+      // mobility for horizantal nodes at top
+      for (size_t i = 1; i < 2; i++)
+      {
+        Ptr<ConstantVelocityMobilityModel> cvmm1 = nodes.Get(i)->GetObject<ConstantVelocityMobilityModel> ();
+        Vector pos1 (650, -150, 0);
+        Vector vel1 (-mobileNodesVelocity, 0, 0);
+        cvmm1->SetPosition(pos1);
+        cvmm1->SetVelocity(vel1);
+      }
+      Simulator::Schedule(Seconds(12), &RevertDirection, nodes,true);
+    }
+}
+void 
+SetMobileNodesMobilityModel(NodeContainer nodes){
+  MobilityHelper mobile; 
+  mobile.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
+  mobile.Install(nodes);
+
+  // mobility for horizantal nodes at top
+  for (size_t i = 0; i < 1; i++)
+  {
+    Ptr<ConstantVelocityMobilityModel> cvmm = nodes.Get(i)->GetObject<ConstantVelocityMobilityModel> ();
+    Vector pos (0, -200, 0);
+    Vector vel (mobileNodesVelocity, 0, 0);
     cvmm->SetPosition(pos);
     cvmm->SetVelocity(vel);
-    // consumer 2
-    Ptr<ConstantVelocityMobilityModel> cvmm1 = consumers.Get(1)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos1 (300, 0, 0);
-    Vector vel1 (0, 0, 0);   
+  }
+  
+  // mobility for horizantal nodes at top
+  for (size_t i = 1; i < 2; i++)
+  {
+    Ptr<ConstantVelocityMobilityModel> cvmm1 = nodes.Get(i)->GetObject<ConstantVelocityMobilityModel> ();
+    Vector pos1 (100, -150, 0);
+    Vector vel1 (mobileNodesVelocity, 0, 0);
     cvmm1->SetPosition(pos1);
     cvmm1->SetVelocity(vel1);
+  }
+  
+}
+WifiHelper
+GetWifiObject(){
+  WifiHelper wifi;
+  wifi.SetStandard(WIFI_PHY_STANDARD_80211a);
+  wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode",
+                               StringValue("OfdmRate24Mbps"));
+  return wifi;
+}
 
+YansWifiPhyHelper
+GetPhysicalLayerWifi(){
+  
+  YansWifiChannelHelper wifiChannel; 
+  wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
+  wifiChannel.AddPropagationLoss("ns3::ThreeLogDistancePropagationLossModel");
+  wifiChannel.AddPropagationLoss("ns3::NakagamiPropagationLossModel");
 
-        Simulator::Schedule(Seconds(12), &RevertDirection, consumers,true);
-    }
+  YansWifiPhyHelper wifiPhyHelper = YansWifiPhyHelper::Default();
+  wifiPhyHelper.SetChannel(wifiChannel.Create());
+  wifiPhyHelper.Set("TxPowerStart", DoubleValue(10));
+  wifiPhyHelper.Set("TxPowerEnd", DoubleValue(10));
 
+  return wifiPhyHelper;
+}
+WifiMacHelper
+GetMacLayerWifi(){
+  WifiMacHelper wifiMacHelper;
+  wifiMacHelper.SetType("ns3::AdhocWifiMac");
 
-    }
+  return wifiMacHelper;
+}
+
+void 
+SetStaticMobilityModel(NodeContainer nodes){
+  MobilityHelper mobile; 
+  mobile.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
+  mobile.Install(nodes);
+  Ptr<ConstantVelocityMobilityModel> cvmm1 = nodes.Get(0)->GetObject<ConstantVelocityMobilityModel> ();
+  Vector pos1 (375, 0, 0);
+  Vector vel1 (0, 0, 0);
+  cvmm1->SetPosition(pos1);
+  cvmm1->SetVelocity(vel1);
+}
+void 
+SetNDNStack(NodeContainer nodes){
+  NS_LOG_INFO("Installing NDN stack");
+  ndn::StackHelper ndnHelper;
+  ndnHelper.setPolicy("nfd::cs::lru");
+  ndnHelper.setCsSize(1000);
+  ndnHelper.SetDefaultRoutes(true);
+  ndnHelper.Install(nodes);
+}
 int
 main(int argc, char* argv[])
 {
@@ -87,93 +174,51 @@ main(int argc, char* argv[])
   Config::SetDefault("ns3::WifiRemoteStationManager::RtsCtsThreshold", StringValue("2200"));
   Config::SetDefault("ns3::WifiRemoteStationManager::NonUnicastMode",
                      StringValue("OfdmRate24Mbps"));
-
+  // reading command line arguments                    
   CommandLine cmd;
   cmd.Parse(argc, argv);
-
-  //////////////////////
-  //////////////////////
-  //////////////////////
-  WifiHelper wifi;
-  // wifi.SetRemoteStationManager ("ns3::AarfWifiManager");
-  wifi.SetStandard(WIFI_PHY_STANDARD_80211a);
-  wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode",
-                               StringValue("OfdmRate24Mbps"));
-
-  YansWifiChannelHelper wifiChannel; // = YansWifiChannelHelper::Default ();
-  wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
-  wifiChannel.AddPropagationLoss("ns3::ThreeLogDistancePropagationLossModel");
-  wifiChannel.AddPropagationLoss("ns3::NakagamiPropagationLossModel");
-
-  // YansWifiPhy wifiPhy = YansWifiPhy::Default();
-  YansWifiPhyHelper wifiPhyHelper = YansWifiPhyHelper::Default();
-  wifiPhyHelper.SetChannel(wifiChannel.Create());
-  wifiPhyHelper.Set("TxPowerStart", DoubleValue(10));
-  wifiPhyHelper.Set("TxPowerEnd", DoubleValue(10));
-
-  WifiMacHelper wifiMacHelper;
-  wifiMacHelper.SetType("ns3::AdhocWifiMac");
+  
+  NodeContainer staticNodes;
+  staticNodes.Create(staticNodesCount);
+  NodeContainer mobileNodes;
+  mobileNodes.Create(mobileNdesCount);
+  
 
 
-
-  NodeContainer nodes;
-  nodes.Create(2);
-
-  ////////////////
   // 1. Install Wifi
-  NetDeviceContainer wifiNetDevices = wifi.Install(wifiPhyHelper, wifiMacHelper, nodes);
+  WifiHelper wifi = GetWifiObject();
+  YansWifiPhyHelper wifiPhyHelper=GetPhysicalLayerWifi();
+  WifiMacHelper wifiMacHelper=GetMacLayerWifi();
+  NetDeviceContainer wifiNetDevices = wifi.Install(wifiPhyHelper, wifiMacHelper, mobileNodes);
+                                      wifi.Install(wifiPhyHelper, wifiMacHelper, staticNodes);
 
   // 2. Install Mobility model
- ////// Setting mobility model and movement parameters for mobile nodes
-    ////// ConstantVelocityMobilityModel is a subclass of MobilityModel
-    MobilityHelper mobile; 
-    mobile.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
-    mobile.Install(nodes);
-    ////// Setting position and velocity of mobile node 1
-    Ptr<ConstantVelocityMobilityModel> cvmm = nodes.Get(0)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos (0, -100, 0);
-    Vector vel (50, 0, 0);
-    cvmm->SetPosition(pos);
-    cvmm->SetVelocity(vel);
-     ////// Setting position and velocity of mobile node 2
-    Ptr<ConstantVelocityMobilityModel> cvmm1 = nodes.Get(1)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos1 (425, 0, 0);
-    Vector vel1 (0, 0, 0);
-    cvmm1->SetPosition(pos1);
-    cvmm1->SetVelocity(vel1);
+  SetMobileNodesMobilityModel(mobileNodes);
+  SetStaticMobilityModel(staticNodes);
+    
 
   // 3. Install NDN stack
-  NS_LOG_INFO("Installing NDN stack");
-  ndn::StackHelper ndnHelper;
-  // ndnHelper.AddNetDeviceFaceCreateCallback (WifiNetDevice::GetTypeId (), MakeCallback
-  // (MyNetDeviceFaceCallback));
-  ndnHelper.setPolicy("nfd::cs::lru");
-  ndnHelper.setCsSize(1000);
-  ndnHelper.SetDefaultRoutes(true);
-  ndnHelper.Install(nodes);
+  SetNDNStack(mobileNodes);
+  SetNDNStack(staticNodes);
 
-  // Set BestRoute strategy
-  ndn::StrategyChoiceHelper::Install(nodes, "/", "/localhost/nfd/strategy/best-route");
+  // 4. Set broadcast strategy
+  ndn::StrategyChoiceHelper::Install(mobileNodes, "/", "/localhost/nfd/strategy/broadcast");
+    ndn::StrategyChoiceHelper::Install(staticNodes, "/", "/localhost/nfd/strategy/broadcast");
 
   // 4. Set up applications
   NS_LOG_INFO("Installing Applications"); 
 
-
-//
-// Atif-Code: No need to setup consumer application since we are dealing with the push based communication in which the producer node initiates the communication
-
-   ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
-  // consumerHelper.SetPrefix("/test/prefix");
-  // consumerHelper.SetAttribute("Frequency", DoubleValue(10.0));
-  consumerHelper.Install(nodes.Get(0));
+  // Atif-Code: No need to setup consumer application since we are dealing with the push based communication in which the producer node initiates the communication
+  ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
+  consumerHelper.Install(mobileNodes);
 
   ndn::AppHelper producerHelper("ns3::ndn::Producer");
   producerHelper.SetPrefix("/");
   producerHelper.SetAttribute("PayloadSize", StringValue("1200"));
-  producerHelper.Install(nodes.Get(1));
+  producerHelper.Install(staticNodes.Get(0));
 
-  ////////////////
-  Simulator::Schedule(Seconds(12), &RevertDirection, nodes,false);
+  // Simulator
+  Simulator::Schedule(Seconds(12), &RevertDirection, mobileNodes,false);
   Simulator::Stop(Seconds(30.0));
 
   Simulator::Run();
@@ -182,7 +227,7 @@ main(int argc, char* argv[])
   return 0;
 }
 
-} // namespace ns3
+} 
 
 int
 main(int argc, char* argv[])
