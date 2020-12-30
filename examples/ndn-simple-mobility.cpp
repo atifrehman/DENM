@@ -2,8 +2,7 @@
 /**
  * Copyright (c) 2011-2015  Regents of the University of California.
  *
- * This file is part of ndnSIM. See AUTHORS for complete list of ndnSIM authors and
- * contributors.
+ * Author: Muhammad Atif Ur Rehman
  *
  * ndnSIM is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Foundation,
@@ -31,10 +30,64 @@ namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE("ndn.WifiExample");
 
-int mobileNdesCount=2;
+int mobileNdesCount=4;
 int mobileNodesVelocity=50;
 int staticNodesCount=1;
-void RevertDirection(NodeContainer nodes, bool revert) //DEBUG purpose
+int revertDirectionTime=12;
+
+void 
+SetStaticMobilityModel(NodeContainer nodes){
+  MobilityHelper mobile; 
+  mobile.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
+  mobile.Install(nodes);
+  Ptr<ConstantVelocityMobilityModel> cvmm1 = nodes.Get(0)->GetObject<ConstantVelocityMobilityModel> ();
+  Vector pos1 (375, 600, 0);
+  Vector vel1 (0, 0, 0);
+  cvmm1->SetPosition(pos1);
+  cvmm1->SetVelocity(vel1);
+}
+
+void 
+SetVelocityAndPostion(ns3::Ptr<ns3::Node> node, int xPosition, int yPosition, bool isForwardDirection)
+{
+  ns3::Ptr<ns3::UniformRandomVariable> m_rand(ns3::CreateObject<ns3::UniformRandomVariable>());
+
+  double random_vertitical_shift_x=m_rand->GetValue(100, 200);
+  double random_vertitical_shift_y=m_rand->GetValue(100, 200);
+  double random_velocity_shift=m_rand->GetValue(50, 200);
+
+  xPosition = xPosition+random_vertitical_shift_x;
+  yPosition = yPosition+random_vertitical_shift_y;
+
+  Ptr<ConstantVelocityMobilityModel> cvmm = node->GetObject<ConstantVelocityMobilityModel> ();
+  cvmm->SetPosition(Vector (xPosition, yPosition, 0));
+  if(isForwardDirection){
+    cvmm->SetVelocity(Vector ((mobileNodesVelocity+random_velocity_shift), 0, 0));
+  }
+  else{
+    cvmm->SetVelocity(Vector (-(mobileNodesVelocity+random_velocity_shift), 0, 0));
+  }
+
+}
+void 
+SetMobileNodesMobilityModel(NodeContainer nodes, int defaultXPosition, int defaultYPoistion, bool isForwardDirection){
+  MobilityHelper mobile; 
+  mobile.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
+  mobile.Install(nodes);
+  Ptr<ConstantVelocityMobilityModel> cvmm;
+  // mobility for horizantal nodes at bottom
+  for (size_t i = 0; i < nodes.GetN()/2; i++)
+  {
+    SetVelocityAndPostion(nodes.Get(i),defaultXPosition,(defaultYPoistion),isForwardDirection);
+  }
+  // mobility for horizantal nodes at top
+  for (size_t i = nodes.GetN()/2; i < nodes.GetN(); i++)
+  {
+    SetVelocityAndPostion(nodes.Get(i),defaultXPosition, defaultYPoistion*4,isForwardDirection);
+  }
+
+}
+void RevertDirection(NodeContainer nodes, bool revert) 
 {
     MobilityHelper mobile; 
     mobile.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
@@ -42,78 +95,16 @@ void RevertDirection(NodeContainer nodes, bool revert) //DEBUG purpose
     if(revert==true)
     {
 
-      // mobility for horizantal nodes at top
-      for (size_t i = 0; i < 1; i++)
-      {
-        Ptr<ConstantVelocityMobilityModel> cvmm = nodes.Get(i)->GetObject<ConstantVelocityMobilityModel> ();
-        Vector pos (0, -200, 0);
-        Vector vel (mobileNodesVelocity, 0, 0);
-        cvmm->SetPosition(pos);
-        cvmm->SetVelocity(vel);
-      }
-
-      // mobility for horizantal nodes at top
-      for (size_t i = 1; i < 2; i++)
-      {
-        Ptr<ConstantVelocityMobilityModel> cvmm1 = nodes.Get(i)->GetObject<ConstantVelocityMobilityModel> ();
-        Vector pos1 (100, -150, 0);
-        Vector vel1 (mobileNodesVelocity, 0, 0);
-        cvmm1->SetPosition(pos1);
-        cvmm1->SetVelocity(vel1);
-      }
-      Simulator::Schedule(Seconds(12), &RevertDirection, nodes,false);
+      SetMobileNodesMobilityModel(nodes,0,200,true);
+      Simulator::Schedule(Seconds(revertDirectionTime), &RevertDirection, nodes,false);
     }
     else
     {
-     // mobility for horizantal nodes at top
-      for (size_t i = 0; i < 1; i++)
-      {
-        Ptr<ConstantVelocityMobilityModel> cvmm = nodes.Get(i)->GetObject<ConstantVelocityMobilityModel> ();
-        Vector pos (750, -200, 0);
-        Vector vel (-mobileNodesVelocity, 0, 0);
-        cvmm->SetPosition(pos);
-        cvmm->SetVelocity(vel);
-      }
-      
-      // mobility for horizantal nodes at top
-      for (size_t i = 1; i < 2; i++)
-      {
-        Ptr<ConstantVelocityMobilityModel> cvmm1 = nodes.Get(i)->GetObject<ConstantVelocityMobilityModel> ();
-        Vector pos1 (650, -150, 0);
-        Vector vel1 (-mobileNodesVelocity, 0, 0);
-        cvmm1->SetPosition(pos1);
-        cvmm1->SetVelocity(vel1);
-      }
-      Simulator::Schedule(Seconds(12), &RevertDirection, nodes,true);
+      SetMobileNodesMobilityModel(nodes,750,200,false);
+      Simulator::Schedule(Seconds(revertDirectionTime), &RevertDirection, nodes,true);
     }
 }
-void 
-SetMobileNodesMobilityModel(NodeContainer nodes){
-  MobilityHelper mobile; 
-  mobile.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
-  mobile.Install(nodes);
 
-  // mobility for horizantal nodes at top
-  for (size_t i = 0; i < 1; i++)
-  {
-    Ptr<ConstantVelocityMobilityModel> cvmm = nodes.Get(i)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos (0, -200, 0);
-    Vector vel (mobileNodesVelocity, 0, 0);
-    cvmm->SetPosition(pos);
-    cvmm->SetVelocity(vel);
-  }
-  
-  // mobility for horizantal nodes at top
-  for (size_t i = 1; i < 2; i++)
-  {
-    Ptr<ConstantVelocityMobilityModel> cvmm1 = nodes.Get(i)->GetObject<ConstantVelocityMobilityModel> ();
-    Vector pos1 (100, -150, 0);
-    Vector vel1 (mobileNodesVelocity, 0, 0);
-    cvmm1->SetPosition(pos1);
-    cvmm1->SetVelocity(vel1);
-  }
-  
-}
 WifiHelper
 GetWifiObject(){
   WifiHelper wifi;
@@ -147,17 +138,6 @@ GetMacLayerWifi(){
 }
 
 void 
-SetStaticMobilityModel(NodeContainer nodes){
-  MobilityHelper mobile; 
-  mobile.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
-  mobile.Install(nodes);
-  Ptr<ConstantVelocityMobilityModel> cvmm1 = nodes.Get(0)->GetObject<ConstantVelocityMobilityModel> ();
-  Vector pos1 (375, 0, 0);
-  Vector vel1 (0, 0, 0);
-  cvmm1->SetPosition(pos1);
-  cvmm1->SetVelocity(vel1);
-}
-void 
 SetNDNStack(NodeContainer nodes){
   NS_LOG_INFO("Installing NDN stack");
   ndn::StackHelper ndnHelper;
@@ -169,6 +149,7 @@ SetNDNStack(NodeContainer nodes){
 int
 main(int argc, char* argv[])
 {
+  ns3::PacketMetadata::Enable ();
   // disable fragmentation
   Config::SetDefault("ns3::WifiRemoteStationManager::FragmentationThreshold", StringValue("2200"));
   Config::SetDefault("ns3::WifiRemoteStationManager::RtsCtsThreshold", StringValue("2200"));
@@ -193,7 +174,7 @@ main(int argc, char* argv[])
                                       wifi.Install(wifiPhyHelper, wifiMacHelper, staticNodes);
 
   // 2. Install Mobility model
-  SetMobileNodesMobilityModel(mobileNodes);
+  SetMobileNodesMobilityModel(mobileNodes,0,200,true);
   SetStaticMobilityModel(staticNodes);
     
 
@@ -218,7 +199,7 @@ main(int argc, char* argv[])
   producerHelper.Install(staticNodes.Get(0));
 
   // Simulator
-  Simulator::Schedule(Seconds(12), &RevertDirection, mobileNodes,false);
+  Simulator::Schedule(Seconds(revertDirectionTime), &RevertDirection, mobileNodes,false);
   Simulator::Stop(Seconds(30.0));
 
   Simulator::Run();
