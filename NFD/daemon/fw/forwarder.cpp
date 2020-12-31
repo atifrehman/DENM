@@ -316,7 +316,7 @@ Forwarder::onIncomingData(const FaceEndpoint& ingress, const Data& data)
         }
         else
         { // data is duplicated, remove association and relevant event 
-          std::cout<<"ndn.Forwarder onIncomingData Data is duplicated emove association and relevant event. Node-Id"<<GetCurrentNode()->GetId()<<std::endl;
+          std::cout<<"ndn.Forwarder onIncomingData Data is duplicated emove association and relevant event. Node-Id: "<<GetCurrentNode()->GetId()<<std::endl;
           RemoveEventNameAssociation(ev_association.event_id,node_id,data_name);
         }
       }
@@ -324,8 +324,6 @@ Forwarder::onIncomingData(const FaceEndpoint& ingress, const Data& data)
       {
           return; //drop
       }
-      
-      
     }
   }
   // receive Data Atif-Code:  
@@ -363,8 +361,9 @@ Forwarder::onIncomingData(const FaceEndpoint& ingress, const Data& data)
       for (auto & face : l3Object->getForwarder()->m_faceTable)
       {
 
-       // std::cout << "Face Id :" << face.getId() << std::endl;
-        if(face.getId()==257){
+        // std::cout << "Node Id: "<<GetCurrentNode()->GetId()<<" Face Id :" << face.getId() 
+        // <<"Face count: " <<l3Object->getForwarder()->m_faceTable.size()<< std::endl;
+        if(face.getId()!=258){
          //this->onOutgoingData(data, FaceEndpoint(face,face.getId()));
           ns3::Time time = ns3::MilliSeconds (timerValue);
           ns3::EventId eventId = ns3::Simulator::Schedule (time, &Forwarder::onOutgoingData, this, data, FaceEndpoint(face,face.getId()));
@@ -713,7 +712,7 @@ Forwarder::GetTimerValue(Data data){
   
   std::cout<<"Forwarder::GetTimerValue: Timer Value:  "<<std::ceil(forward_timer)<<std::endl;
   
-  return std::ceil(forward_timer);
+  return abs(std::ceil(forward_timer));
 }
 
 std::tuple<double, double, double> 

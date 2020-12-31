@@ -2,7 +2,8 @@
 /**
  * Copyright (c) 2011-2015  Regents of the University of California.
  *
- * Author: Muhammad Atif Ur Rehman
+ * This file is part of ndnSIM. See AUTHORS for complete list of ndnSIM authors and
+ * contributors.
  *
  * ndnSIM is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Foundation,
@@ -30,7 +31,7 @@ namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE("ndn.WifiExample");
 
-int mobileNdesCount=4;
+int mobileNdesCount=16;
 int mobileNodesVelocity=50;
 int staticNodesCount=1;
 int revertDirectionTime=12;
@@ -41,7 +42,7 @@ SetStaticMobilityModel(NodeContainer nodes){
   mobile.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
   mobile.Install(nodes);
   Ptr<ConstantVelocityMobilityModel> cvmm1 = nodes.Get(0)->GetObject<ConstantVelocityMobilityModel> ();
-  Vector pos1 (375, 600, 0);
+  Vector pos1 (375, 500, 0);
   Vector vel1 (0, 0, 0);
   cvmm1->SetPosition(pos1);
   cvmm1->SetVelocity(vel1);
@@ -83,7 +84,7 @@ SetMobileNodesMobilityModel(NodeContainer nodes, int defaultXPosition, int defau
   // mobility for horizantal nodes at top
   for (size_t i = nodes.GetN()/2; i < nodes.GetN(); i++)
   {
-    SetVelocityAndPostion(nodes.Get(i),defaultXPosition, defaultYPoistion*4,isForwardDirection);
+    SetVelocityAndPostion(nodes.Get(i),defaultXPosition, defaultYPoistion*3,isForwardDirection);
   }
 
 }
