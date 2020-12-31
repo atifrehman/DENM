@@ -71,38 +71,52 @@ SetVelocityAndPostion(ns3::Ptr<ns3::Node> node, int xPosition, int yPosition, bo
 
 }
 void 
-SetMobileNodesMobilityModel(NodeContainer nodes, int defaultXPosition, int defaultYPoistion, bool isForwardDirection){
+SetMobileNodesMobilityModel(NodeContainer nodes, int defaultXPosition,int defaultXPositionBottom, int defaultYPoistion, bool isForwardDirection){
   MobilityHelper mobile; 
   mobile.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
   mobile.Install(nodes);
+
+  
+  
+
   Ptr<ConstantVelocityMobilityModel> cvmm;
   // mobility for horizantal nodes at bottom
   for (size_t i = 0; i < nodes.GetN()/2; i++)
   {
-    SetVelocityAndPostion(nodes.Get(i),defaultXPosition,(defaultYPoistion),isForwardDirection);
+    SetVelocityAndPostion(nodes.Get(i),defaultXPosition,(defaultYPoistion),!isForwardDirection);
   }
   // mobility for horizantal nodes at top
   for (size_t i = nodes.GetN()/2; i < nodes.GetN(); i++)
   {
-    SetVelocityAndPostion(nodes.Get(i),defaultXPosition, defaultYPoistion*3,isForwardDirection);
+    SetVelocityAndPostion(nodes.Get(i),defaultXPositionBottom, (defaultYPoistion*2.5),isForwardDirection);
   }
 
 }
-void RevertDirection(NodeContainer nodes, bool revert) 
+void RevertDirection(NodeContainer nodes, bool revert,int defaultXPosition) 
 {
+
+  int defaultXPositionBottom=-1;
+  if (defaultXPosition==0)
+  {
+    defaultXPositionBottom=750;
+  }
+  else{
+    defaultXPositionBottom=0;
+  }
+
     MobilityHelper mobile; 
     mobile.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
     mobile.Install(nodes);
     if(revert==true)
     {
 
-      SetMobileNodesMobilityModel(nodes,0,200,true);
-      Simulator::Schedule(Seconds(revertDirectionTime), &RevertDirection, nodes,false);
+      SetMobileNodesMobilityModel(nodes,defaultXPosition,defaultXPositionBottom,200,true);
+      Simulator::Schedule(Seconds(revertDirectionTime), &RevertDirection, nodes,false,defaultXPositionBottom);
     }
     else
     {
-      SetMobileNodesMobilityModel(nodes,750,200,false);
-      Simulator::Schedule(Seconds(revertDirectionTime), &RevertDirection, nodes,true);
+      SetMobileNodesMobilityModel(nodes,defaultXPosition,defaultXPositionBottom,200,false);
+      Simulator::Schedule(Seconds(revertDirectionTime), &RevertDirection, nodes,true,defaultXPositionBottom);
     }
 }
 
@@ -175,7 +189,7 @@ main(int argc, char* argv[])
                                       wifi.Install(wifiPhyHelper, wifiMacHelper, staticNodes);
 
   // 2. Install Mobility model
-  SetMobileNodesMobilityModel(mobileNodes,0,200,true);
+  SetMobileNodesMobilityModel(mobileNodes,0,750,200,false);
   SetStaticMobilityModel(staticNodes);
     
 
@@ -200,7 +214,7 @@ main(int argc, char* argv[])
   producerHelper.Install(staticNodes.Get(0));
 
   // Simulator
-  Simulator::Schedule(Seconds(revertDirectionTime), &RevertDirection, mobileNodes,false);
+  Simulator::Schedule(Seconds(revertDirectionTime), &RevertDirection, mobileNodes,false,0);
   Simulator::Stop(Seconds(30.0));
 
   Simulator::Run();
