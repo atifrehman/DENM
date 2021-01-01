@@ -61,6 +61,8 @@ Producer::GetTypeId(void)
       .AddAttribute("Freshness", "Freshness of data packets, if 0, then unlimited freshness",
                     TimeValue(Seconds(0)), MakeTimeAccessor(&Producer::m_freshness),
                     MakeTimeChecker())
+      .AddAttribute("AdvTransmissionInterval", "Advertisement Packet Transmission Interval", StringValue("1.0"),
+                    MakeDoubleAccessor(&Producer::m_adv_transmission_interval), MakeDoubleChecker<double>())
       .AddAttribute(
          "Signature",
          "Fake signature, 0 valid signature (default), other values application-specific",
@@ -106,11 +108,11 @@ Producer::ScheduleAdvertisementPacket(bool isFromApplicationStarted)
 {
 
   if (isFromApplicationStarted) {
-    m_sendEvent = Simulator::Schedule(Seconds(0.0), &Producer::PushAdvertisementData, this);
+    m_sendEvent = Simulator::Schedule(MilliSeconds(0.0), &Producer::PushAdvertisementData, this);
     isFromApplicationStarted = false;
   }
   else if (!m_sendEvent.IsRunning())
-    m_sendEvent = Simulator::Schedule((Seconds(1.0 / 100)),
+    m_sendEvent = Simulator::Schedule((MilliSeconds(m_adv_transmission_interval)), 
                                       &Producer::PushAdvertisementData, this);
 }
 
@@ -197,10 +199,10 @@ Producer::GetDENMDataName(){
   std::string contentType=std::to_string(std::ceil(m_rand->GetValue(0, 3)));
   std::string currentLocation=CurrentNodeLocation();
   std::string currentTime= std::to_string(CurrentTime());
+  m_sequence_number=m_sequence_number+1;
+  std::string nameString="/denm/"+applicationType+"/"+contentType+"/"+currentLocation+"/"+currentTime+"/"+ std::to_string(m_sequence_number)+"/";
   
-  std::string nameString="/denm/"+applicationType+"/"+contentType+"/"+currentLocation+"/"+currentTime+"/";
-  
-  //std::cout<<"ndn.Producer GetDENMDataName(): name value: "<<nameString<<std::endl;
+  std::cout<<"ndn.Producer GetDENMDataName(): name value: "<<nameString<<std::endl;
 
   shared_ptr<Name> name = make_shared<Name>(nameString);
 

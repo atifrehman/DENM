@@ -31,10 +31,32 @@ namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE("ndn.WifiExample");
 
-int mobileNdesCount=16;
-int mobileNodesVelocity=50;
-int staticNodesCount=1;
-int revertDirectionTime=12;
+int _mobileNdesCount=4; 
+
+// Graphs for DENM, HNDN, NDN
+
+// Scenario 1: Nodes:            10,20,30,40,50 (dyanmic)
+// Scenario 1: Avergae Velocity: 100 m/s 
+// Scenario 1: Advertisement Fre: 10 pkt/s 
+// generates graph 1, Scenario 2: 20
+
+// Scenario 2: Nodes:            20 
+// Scenario 2: Avergae Velocity:  25,50,75,100,125 (dyanmic) 
+// Scenario 2: Advertisement Fre: 10 pkt/s 
+// generates graph 2,
+
+// Scenario 3: Nodes:            20 
+// Scenario 3: Avergae Velocity:  100 m/s (dyanmic) 
+// Scenario 2: Advertisement Fre: 10,20,30,40,50 pkt/s 
+// generates graph 3
+
+
+//Scenario 3: Number of node 20 
+// Advertisment Packet Tranmission Frequency at accdiedental Vehicle: 2,4,8,10,12 / second 
+int _mobileNodesVelocity=50;
+int _staticNodesCount=1;
+int _revertDirectionTime=12;
+int _transmissionInterval=10;
 
 void 
 SetStaticMobilityModel(NodeContainer nodes){
@@ -63,10 +85,10 @@ SetVelocityAndPostion(ns3::Ptr<ns3::Node> node, int xPosition, int yPosition, bo
   Ptr<ConstantVelocityMobilityModel> cvmm = node->GetObject<ConstantVelocityMobilityModel> ();
   cvmm->SetPosition(Vector (xPosition, yPosition, 0));
   if(isForwardDirection){
-    cvmm->SetVelocity(Vector ((mobileNodesVelocity+random_velocity_shift), 0, 0));
+    cvmm->SetVelocity(Vector ((_mobileNodesVelocity+random_velocity_shift), 0, 0));
   }
   else{
-    cvmm->SetVelocity(Vector (-(mobileNodesVelocity+random_velocity_shift), 0, 0));
+    cvmm->SetVelocity(Vector (-(_mobileNodesVelocity+random_velocity_shift), 0, 0));
   }
 
 }
@@ -111,12 +133,12 @@ void RevertDirection(NodeContainer nodes, bool revert,int defaultXPosition)
     {
 
       SetMobileNodesMobilityModel(nodes,defaultXPosition,defaultXPositionBottom,200,true);
-      Simulator::Schedule(Seconds(revertDirectionTime), &RevertDirection, nodes,false,defaultXPositionBottom);
+      Simulator::Schedule(Seconds(_revertDirectionTime), &RevertDirection, nodes,false,defaultXPositionBottom);
     }
     else
     {
       SetMobileNodesMobilityModel(nodes,defaultXPosition,defaultXPositionBottom,200,false);
-      Simulator::Schedule(Seconds(revertDirectionTime), &RevertDirection, nodes,true,defaultXPositionBottom);
+      Simulator::Schedule(Seconds(_revertDirectionTime), &RevertDirection, nodes,true,defaultXPositionBottom);
     }
 }
 
@@ -172,12 +194,20 @@ main(int argc, char* argv[])
                      StringValue("OfdmRate24Mbps"));
   // reading command line arguments                    
   CommandLine cmd;
-  cmd.Parse(argc, argv);
+  cmd.AddValue("_mobileNdesCount", "Total Number of Mobile Nodes: ", _mobileNdesCount);
+  cmd.AddValue("_mobileNodesVelocity", "Mobile Nodes Velocity: ", _mobileNodesVelocity);
+    cmd.AddValue("_transmissionInterval", "Advertisement Packet Transmission Frequency: ", _transmissionInterval);
   
+  cmd.Parse (argc, argv);
+
+  std::cout<<"Total Number of Mobile Nodes: "<<_mobileNdesCount<<std::endl;
+  std::cout<<"Mobile Nodes Velocity: "<<_mobileNodesVelocity<<std::endl;
+  std::cout<<"Advertisement Packet Interval in Miliseconds: "<<_transmissionInterval<<std::endl;
+
   NodeContainer staticNodes;
-  staticNodes.Create(staticNodesCount);
+  staticNodes.Create(_staticNodesCount);
   NodeContainer mobileNodes;
-  mobileNodes.Create(mobileNdesCount);
+  mobileNodes.Create(_mobileNdesCount);
   
 
 
@@ -210,11 +240,12 @@ main(int argc, char* argv[])
 
   ndn::AppHelper producerHelper("ns3::ndn::Producer");
   producerHelper.SetPrefix("/");
+  producerHelper.SetAttribute("AdvTransmissionInterval",StringValue(std::to_string(_transmissionInterval)));
   producerHelper.SetAttribute("PayloadSize", StringValue("1200"));
   producerHelper.Install(staticNodes.Get(0));
 
   // Simulator
-  Simulator::Schedule(Seconds(revertDirectionTime), &RevertDirection, mobileNodes,false,0);
+  Simulator::Schedule(Seconds(_revertDirectionTime), &RevertDirection, mobileNodes,false,0);
   Simulator::Stop(Seconds(30.0));
 
   Simulator::Run();

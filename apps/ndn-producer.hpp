@@ -87,7 +87,9 @@ private:
   Time m_freshness;
 
   uint32_t m_signature;
+  uint32_t m_sequence_number=0;
   Name m_keyLocator;
+  double m_adv_transmission_interval;
 };
 
 } // namespace ndn
