@@ -1,7 +1,7 @@
 DENM
 ======
 
-**DENM is built on the top of NDN and specifically designed for the vehiclur communication scenarios. The information related to the research article will be updated soon. Stay tuned ...** 
+**DENM is built on the top of NDN and specifically designed for the push-based vehiclur communication scenarios. The information related to the research article will be updated soon. Stay tuned ...** 
 
 The information related to the NDN official simulator (ndnSIM) provided by the NDN team is as follows. 
 
